@@ -2,7 +2,7 @@
 Estimation of discrete choice models in python
 
 ### Example:
-The following example analyzes data of fishing mode choices. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:
+The following example analyzes choices of fishing modes. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:
 - `X`: Data matrix in long format (numpy array, shape [n_samples, n_fvariables])
 - `y`: Binary vector of choices (numpy array, shape [n_samples, ])
 - `varnames`: List of variable names. Its length must match number of columns in `X`

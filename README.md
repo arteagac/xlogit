@@ -1,5 +1,5 @@
 # pymlogit
-Estimation of discrete choice models in python
+Estimation of multinomial logit models in python 
 
 ### Example:
 The following example analyzes choices of fishing modes. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:

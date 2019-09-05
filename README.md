@@ -2,21 +2,28 @@
 Estimation of discrete choice models in python
 
 ### Example:
-The following example analyzes choices of fishing locations. For information about the data see: https://doi.org/10.1162/003465399767923827
-The data is imported with pandas and then a multinomial model is fitted by passing numpy arrays X and y. The name of the alternatives need to be passed in order to create the output names and in order to know how the data in long format is splitted across alternatives
+The following example analyzes data of fishing mode choices. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:
+- `X`: Data matrix in long format (numpy array, shape [n_samples, n_fvariables])
+- `y`: Binary vector of choices (numpy array, shape [n_samples, ])
+- `varnames`: List of variable names. Its length must match number of columns in `X`
+- `alternatives`:  List of alternatives names or codes.
+- `asvars`: List of alternative specific variables
+- `isvars`: List of individual specific variables
+The current version of `pymlogit` only supports data in long format.
 
 #### Usage
 ```python
-import pandas as pd
 from pymlogit.linear import MultinomialModel
 
-df = pd.read_csv("examples/data/fishing_long.csv") #Data needs to be in long format
+import pandas as pd
+df = pd.read_csv("examples/data/fishing_long.csv")
 
-X = df[['income','price']].values 
-y = df['choice'].values #Choices represented with zeros and ones
+varnames = ['income','price']
+X = df[varnames].values
+y = df['choice'].values
 
 model = MultinomialModel()
-model.fit(X,y,varnames = ['income','price'],isvars = ['income'], asvars=['price'],alternatives=['beach','boat','charter','pier'])
+model.fit(X,y,isvars = ['income'], asvars=['price'],alternatives=['beach','boat','charter','pier'],varnames= varnames)
 model.summary()
 ```
 

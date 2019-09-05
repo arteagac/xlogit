@@ -1,0 +1,1 @@
+from .multinomial import MultinomialModel

@@ -47,9 +47,11 @@ Log-Likelihood= -1220.535
 ```
 
 ### Installation
-Download source code and import pymlogit.linear.MultinomialModel
+Install using pip:  
+`pip install pymlogit`  
+Alternatively, you can download source code and import pymlogit.linear.MultinomialModel
 
-Notes:
+### Notes:
 The current version allows estimation of:
 - Multinomial Logit Models: Models with individual specific variables
 - Conditional Logit Models: Models with alternative specific variables

@@ -24,7 +24,7 @@ class MultinomialModel():
 			numpy.random.seed(random_state)
 
 
-	def fit(self,X,y,alternatives = [],varnames=[],asvars=[],isvars=[],base_alt=None,fit_intercept = True, max_iterations = 2000):
+	def fit(self,X,y,alternatives = None,varnames = None,asvars = None,isvars = None,base_alt=None,fit_intercept = True, max_iterations = 2000):
 		"""
 		Fits multinomial model using the given data parameters. 
 		
@@ -48,6 +48,9 @@ class MultinomialModel():
 			raise ValueError('Either isvars or asvars must be passed as parameter to the fit function')
 		if len(varnames) != X.shape[1]:
 			raise ValueError('The length of varnames must match the number of columns in X')
+		
+		asvars = [] if not asvars else asvars
+		isvars = [] if not isvars else isvars
 		
 		data = X
 		labels = y

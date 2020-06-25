@@ -40,14 +40,7 @@ class MultinomialModel():
 		max_iterations: int, Maximum number of optimization iterations
 		fit_intercept: bool
 		"""
-		if not varnames:
-			raise ValueError('The parameter varnames is required')
-		if not alternatives:
-			raise ValueError('The parameter alternatives is required')
-		if not asvars and not isvars:
-			raise ValueError('Either isvars or asvars must be passed as parameter to the fit function')
-		if len(varnames) != X.shape[1]:
-			raise ValueError('The length of varnames must match the number of columns in X')
+		self._validate_inputs(X,y,alternatives, varnames, asvars, isvars, base_alt, fit_intercept, max_iterations)
 		
 		asvars = [] if not asvars else asvars
 		isvars = [] if not isvars else isvars
@@ -114,6 +107,21 @@ class MultinomialModel():
 			print("Optimization succesfully completed after "+str(total_iter)+" iterations. Use .summary() to see the estimated values")
 		else:
 			print("**** Maximum number of iterations reached. The optimization did not converge")
+
+	def _validate_inputs(self,X,y,alternatives,varnames,asvars,isvars,base_alt,fit_intercept,max_iterations):
+		if not varnames:
+			raise ValueError('The parameter varnames is required')
+		if not alternatives:
+			raise ValueError('The parameter alternatives is required')
+		if not asvars and not isvars:
+			raise ValueError('Either isvars or asvars must be passed as parameter to the fit function')
+		if X.ndim != 2:
+			raise ValueError('X must be an array of two dimensions in long format')
+		if y.ndim != 1:
+			raise ValueError('y must be an array of one dimension in long format')
+		if len(varnames) != X.shape[1]:
+			raise ValueError('The length of varnames must match the number of columns in X')
+
 
 	def log_lik(self,B):
 		"""

@@ -1,5 +1,8 @@
+[![Build Status](https://travis-ci.com/arteagac/pymlogit.svg?branch=master)](https://travis-ci.com/arteagac/pymlogit)
+[![Coverage Status](https://coveralls.io/repos/github/arteagac/pymlogit/badge.svg)](https://coveralls.io/github/arteagac/pymlogit)
+
 # pymlogit
-Estimation of multinomial logit models in python 
+Estimation of multinomial and mixed logit models in python  
 
 ### Example:
 The following example analyzes choices of fishing modes. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:

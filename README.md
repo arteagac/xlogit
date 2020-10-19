@@ -68,19 +68,3 @@ The current version allows estimation of:
 - Conditional Logit Models: Models with alternative specific variables
 - Models with both, individual and alternative specific variables
 
-## Citing `xlogit`
-
-To cite this package:
-
-**BibTeX**
-
-```
-@software{xlogit,
-    author = {Arteaga, Cristian and Bhat, Prithvi and Park, JeeWoong and Paz, Alexander},
-    title = {xlogit: A Python package for GPU-accelerated estimation of mixed logit models},
-    url = {https://github.com/arteagac/xlogit},
-    version = {0.0.2},
-    year = {2020}
-}
-```
-

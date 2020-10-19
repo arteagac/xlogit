@@ -1,7 +1,7 @@
 [![Build Status](https://travis-ci.com/arteagac/pymlogit.svg?branch=master)](https://travis-ci.com/arteagac/pymlogit)
 
 # xlogit
-xlogit: A Python package for GPU-accelerated estimation of mixed logit models.  
+A Python package for GPU-accelerated estimation of mixed logit models.  
 Multinomial and conditional logit models are also supported.
 
 ### Example:
@@ -77,7 +77,7 @@ To cite this package:
 ```
 @software{xlogit,
     author = {Arteaga, Cristian and Bhat, Prithvi and Park, JeeWoong and Paz, Alexander},
-    title = {xlogit: xlogit: A Python package for GPU-accelerated estimation of mixed logit models},
+    title = {xlogit: A Python package for GPU-accelerated estimation of mixed logit models},
     url = {https://github.com/arteagac/xlogit},
     version = {0.0.2},
     year = {2020}

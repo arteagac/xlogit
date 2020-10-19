@@ -1,4 +1,4 @@
-choice_id,alternative,choice,income,price,catch
+id,alt,choice,income,price,catch
 1,beach,0,7083.3317,157.93,0.0678
 1,boat,0,7083.3317,157.93,0.2601
 1,charter,1,7083.3317,182.93,0.5391

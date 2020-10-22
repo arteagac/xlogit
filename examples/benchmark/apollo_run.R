@@ -1,6 +1,6 @@
 # This code estimates a mixed logit model for the artificial
 # dataset using apollo. To use this code you must first 
-# install biogeme by executing:
+# install apollo by executing:
 # install.packages("apollo")
 
 ### Clear memory

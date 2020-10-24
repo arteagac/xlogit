@@ -1,13 +1,23 @@
 # This code estimates a mixed logit model for the artificial
-# dataset using apollo. To use this code you must first 
-# install apollo by executing:
-# install.packages("apollo")
+# dataset using apollo. For installation:
+# Install R version 4.0.3 and then run
+# install.packages("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/RcppArmadillo_0.9.850.1.0.tar.gz",repos=NULL,type="source")
+# install.packages(c("maxLik", "mnormt", "mvtnorm", "coda", "sandwich", "randtoolbox", "numDeriv", "RSGHB", "Deriv"))
+# install.packages("http://www.apollochoicemodelling.com/files/apollo_0.1.0.tar.gz",repos=NULL,type="source")
+# These specific versions need to be kept. Otherwise Apollo won't install
 
-### Clear memory
-rm(list = ls())
+args = commandArgs(trailingOnly=TRUE)
+if(length(args)== 2){
+  n_draws = strtoi(args[1])
+  n_cores = strtoi(args[2])
+}else{
+  n_draws = 500
+  n_cores = 6
+}
+
 
 ### Load Apollo library
-library(apollo)
+suppressMessages(library(apollo))
 
 ### Initialise code
 apollo_initialise()
@@ -18,7 +28,7 @@ apollo_control = list(
   modelDescr ="Mixed logit model on Artificial data",
   indivID   ="id",  
   mixing    = TRUE, 
-  nCores    = 6
+  nCores    = n_cores
 )
 
 # ################################################################# #
@@ -62,7 +72,7 @@ apollo_draws = list(
   interUnifDraws = c(),
   interNormDraws = c(),
   intraDrawsType = "halton",
-  intraNDraws    = 500,
+  intraNDraws    = n_draws,
   intraUnifDraws = c(),
   intraNormDraws = c("draws_emipp","draws_meals","draws_petfr")
 )
@@ -80,7 +90,7 @@ apollo_randCoeff = function(apollo_beta, apollo_inputs){
 #### GROUP AND VALIDATE INPUTS                                   ####
 # ################################################################# #
 
-apollo_inputs = apollo_validateInputs()
+apollo_inputs = apollo_validateInputs(silent=TRUE)
 
 # ################################################################# #
 #### DEFINE MODEL AND LIKELIHOOD FUNCTION                        ####
@@ -135,10 +145,12 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
 # ################################################################# #
 #### MODEL ESTIMATION                                            ####
 # ################################################################# #
-
-model = apollo_estimate(apollo_beta, apollo_fixed,
+estimate_settings = list(silent=TRUE, writeIter=FALSE)
+#invisible(capture.output(
+  model <- apollo_estimate(apollo_beta, apollo_fixed,
                         apollo_probabilities, apollo_inputs, 
-                        estimate_settings=list(hessianRoutine="maxLik"))
+                        estimate_settings=estimate_settings)
+#))
 
 # ################################################################# #
 #### MODEL OUTPUTS                                               ####
@@ -148,55 +160,8 @@ model = apollo_estimate(apollo_beta, apollo_fixed,
 #---- FORMATTED OUTPUT (TO SCREEN)                               ----
 # ----------------------------------------------------------------- #
 
-apollo_modelOutput(model)
-
-# =============== OUTPUT OF THE ESTIMATION ================
-#Model run using Apollo for R, version 0.1.0 
-#www.ApolloChoiceModelling.com
-
-#Model name                       : Apollo_MixedLogit_Artificial
-#Model description                : Mixed logit model on Artificial data
-#Model run at                     : 2020-10-22 01:32:00
-#Estimation method                : bfgs
-#Model diagnosis                  : successful convergence 
-#Number of individuals            : 4000
-#Number of observations           : 4000
-#
-#Number of cores used             :  6 
-#Number of intra-person draws     : 500 (halton)
-#
-#LL(start)                        : -4394.449
-#LL(0)                            : -4394.449
-#LL(final)                        : -2278.603
-#Rho-square (0)                   :  0.4815 
-#Adj.Rho-square (0)               :  0.4785 
-#AIC                              :  4583.21 
-#BIC                              :  4665.03 
-#Estimated parameters             :  13
-#Time taken (hh:mm:ss)            :  00:07:17.49 
-#Iterations                       :  52 
-#Min abs eigenvalue of hessian    :  3.216601 
-#
-#Estimates:
-#          Estimate Std.err. t.ratio(0) Rob.std.err. Rob.t.ratio(0)
-#b_price    -1.0359   0.1741      -5.95       0.1762          -5.88
-#b_time     -1.4631   0.1762      -8.30       0.1725          -8.48
-#b_comfort   1.0662   0.1896       5.62       0.1850           5.76
-#b_conven    0.8962   0.1534       5.84       0.1518           5.90
-#b_nonsig1   0.0747   0.1461       0.51       0.1441           0.52
-#b_nonsig2   0.0140   0.1532       0.09       0.1477           0.09
-#b_nonsig3   0.0174   0.1332       0.13       0.1296           0.13
-#u_emipp    -2.0209   0.2239      -9.03       0.2176          -9.29
-#u_meals     1.7115   0.1992       8.59       0.1931           8.86
-#u_petfr     3.8765   0.3773      10.27       0.3486          11.12
-#sd_emipp    1.0199   0.1396       7.30       0.1435           7.11
-#sd_meals   -0.6946   0.2565      -2.71       0.2556          -2.72
-#sd_petfr    1.2563   0.3130       4.01       0.3028           4.15
-#
-#Overview of choices for model component "MNL"
-#                                    alt1    alt2    alt3
-#Times available                  4000.00 4000.00 4000.00
-#Times chosen                      237.00 3001.00  762.00
-#Percentage chosen overall           5.92   75.02   19.05
-#Percentage chosen when available    5.92   75.02   19.05
-
+cat(c("draws=",n_draws," cores=", n_cores, " time(s)=", round(model$timeTaken, digits = 2),
+     " LogLik", round(model$LLout, digits = 2)), sep="")
+cat("\n")
+cat(paste("apollo", n_draws, n_cores, model$timeTaken, model$LLout, sep=","), 
+file = "results/results_apollo_biogeme.csv", sep="\n", append=TRUE)

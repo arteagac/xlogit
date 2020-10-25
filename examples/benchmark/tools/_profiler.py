@@ -1,10 +1,13 @@
-import cupy
 from time import sleep, time
 from threading import Thread
 import psutil
 import os
 import sys
-cupymem = cupy.get_default_memory_pool()
+try:
+    import cupy
+    cupymem = cupy.get_default_memory_pool()
+except:
+    pass
 output_file = "benchmark_results.csv"
 process = psutil.Process(os.getpid())
 

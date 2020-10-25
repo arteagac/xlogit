@@ -19,11 +19,11 @@ class MixedLogit(ChoiceModel):
         self.rvdist = None
 
     # X: (N, J, K)
-    def fit(self, X, y, varnames=None, alt=None, isvars=None,
-            randvars=None, mixby=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, maxiter=2000, random_state=None,
-            n_draws=200, halton=True, verbose=1):
-        self._validate_inputs(X, y, alt, varnames, isvars,
+    def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
+            weights=None, randvars=None, mixby=None, base_alt=None,
+            fit_intercept=False, init_coeff=None, maxiter=2000,
+            random_state=None, n_draws=200, halton=True, verbose=1):
+        self._validate_inputs(X, y, alt, varnames, isvars, id, weights, mixby,
                               base_alt, fit_intercept, maxiter)
         self._pre_fit(alt, varnames, isvars, base_alt,
                       fit_intercept, maxiter)
@@ -44,7 +44,6 @@ class MixedLogit(ChoiceModel):
         X = X.reshape(N, P, J, K)
         y = y.reshape(N, P, J, 1)
 
-        # Variable that contains a boolean index of random variables.
         self.n_draws = n_draws
         self.randvars = randvars
         rvpos = [np.where(Xnames == rv)[0][0] for rv in self.randvars.keys()]
@@ -52,6 +51,10 @@ class MixedLogit(ChoiceModel):
         self.rvidx[rvpos] = True  # True: Random var, False: Fixed var
         self.rvdist = list(self.randvars.values())
 
+        if weights is not None:
+            weights = weights*(N/np.sum(weights))  # Normalize weights
+
+        # Generate draws
         draws = self._generate_draws(N, R, halton)  # (N,Kr,R)
         n_coeff = K + len(rvpos)
         if init_coeff is None:
@@ -65,11 +68,13 @@ class MixedLogit(ChoiceModel):
             X, y = dev.to_gpu(X), dev.to_gpu(y)
             panel_info = dev.to_gpu(panel_info)
             draws = dev.to_gpu(draws)
+            if weights is not None:
+                weights = dev.to_gpu(weights)
             if verbose > 0:
                 print("**** GPU Processing Enabled ****")
 
-        optimizat_res = minimize(self._loglik_gradient, betas,
-                                 jac=True, args=(X, y, panel_info, draws),
+        optimizat_res = minimize(self._loglik_gradient, betas, jac=True,
+                                 args=(X, y, panel_info, draws, weights),
                                  method='BFGS', tol=1e-5,
                                  options={'gtol': 1e-4, 'maxiter': maxiter})
 
@@ -95,7 +100,7 @@ class MixedLogit(ChoiceModel):
         p = p*panel_info[:, :, None, None]  # Zero for unbalanced panels
         return p
 
-    def _loglik_gradient(self, betas, X, y, panel_info, draws):
+    def _loglik_gradient(self, betas, X, y, panel_info, draws, weights):
         if dev.using_gpu:
             betas = dev.to_gpu(betas)
         p = self._compute_probabilities(betas, X, panel_info, draws)
@@ -105,7 +110,10 @@ class MixedLogit(ChoiceModel):
 
         # Log-likelihood
         lik = pch.mean(axis=1)  # (N,)
-        loglik = dev.np.log(lik).sum()
+        loglik = dev.np.log(lik)
+        if weights is not None:
+            loglik = loglik*weights
+        loglik = loglik.sum()
 
         # Gradient
         Xf = X[:, :, :, ~self.rvidx]
@@ -122,7 +130,9 @@ class MixedLogit(ChoiceModel):
         gr_b = (gr_b*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kr)
         gr_w = (gr_w*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kr)
         # Put all gradients in a single array and aggregate them
-        grad = dev.np.concatenate((gr_f, gr_b, gr_w), axis=1)  # (N,K,R)
+        grad = dev.np.concatenate((gr_f, gr_b, gr_w), axis=1)  # (N,K)
+        if weights is not None:
+            grad = grad*weights[:, None]
         grad = grad.sum(axis=0)  # (K,)
 
         if dev.using_gpu:

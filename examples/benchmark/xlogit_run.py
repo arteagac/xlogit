@@ -11,7 +11,7 @@ if len(sys.argv) == 5:  # If CLI arguments provided
     n_draws, dataset = int(sys.argv[1]), sys.argv[2]
     use_gpu, profile = sys.argv[3] == '1', sys.argv[4] == 'prof'
 else:  # Default in case CLI arguments not provided
-    n_draws, dataset, use_gpu, profile = 100, "artificial", True, True
+    n_draws, dataset, use_gpu, profile = 100, "artificial", False, False
 # ==== Electricity dataset
 if dataset == "electricity":
     df = pd.read_csv(data_folder+"electricity_long.csv")

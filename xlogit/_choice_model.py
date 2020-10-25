@@ -5,6 +5,7 @@ Implements multinomial and mixed logit models
 
 import numpy as np
 from scipy.stats import t
+from time import time
 from abc import ABC, abstractmethod
 
 
@@ -34,14 +35,15 @@ class ChoiceModel(ABC):
         self.loglikelihood = None
 
     @abstractmethod
-    def fit(self, X, y, varnames=None, alt=None, isvars=None,
-            base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000,
-            random_state=None):
+    def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
+            weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
+            maxiter=2000, random_state=None):
         pass
 
     def _pre_fit(self, alt, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
         self._reset_attributes()
+        self._fit_start_time = time()
         self.isvars = [] if not isvars else isvars
         self.asvars = list(set(varnames) - set(self.isvars))
         self.varnames = varnames
@@ -59,6 +61,8 @@ class ChoiceModel(ABC):
         self.loglikelihood = -optimization_res['fun']
         self.coeff_names = coeff_names
         self.total_iter = optimization_res['nit']
+        self.estim_time_sec = time() - self._fit_start_time
+
         if self.convergence and verbose > 0:
             print("Estimation succesfully completed after {} iterations. "
                   "Use .summary() to see the estimated values"
@@ -93,7 +97,7 @@ class ChoiceModel(ABC):
                               self.alt.index(self.base_alt), axis=1)
             Xis = X[:, ispos]
             # Multiply dummy representation by the individual specific data
-            Xis = np.einsum('ij,ik->ijk', Xis, dummy)
+            Xis = np.einsum('nj,nk->njk', Xis, dummy)
             Xis = Xis.reshape(N, J, (J-1)*len(ispos))
 
         # For alternative specific variables
@@ -115,8 +119,8 @@ class ChoiceModel(ABC):
 
         return X, names
 
-    def _validate_inputs(self, X, y, alt, varnames, isvars, base_alt,
-                         fit_intercept, max_iterations):
+    def _validate_inputs(self, X, y, alt, varnames, isvars, id, weights, mixby,
+                         base_alt, fit_intercept, max_iterations):
         if not varnames:
             raise ValueError('The parameter varnames is required')
         if not alt:

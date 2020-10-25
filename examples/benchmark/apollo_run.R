@@ -164,4 +164,4 @@ cat(c("draws=",n_draws," cores=", n_cores, " time(s)=", round(model$timeTaken, d
      " LogLik", round(model$LLout, digits = 2)), sep="")
 cat("\n")
 cat(paste("apollo", n_draws, n_cores, model$timeTaken, model$LLout, sep=","), 
-file = "results/results_apollo_biogeme.csv", sep="\n", append=TRUE)
+file = "results/benchmark_results_apollo_biogeme.csv", sep="\n", append=TRUE)

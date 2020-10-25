@@ -43,4 +43,4 @@ print_estimates("python pylogit_run.py", 1200, "electricity")
 print_estimates("Rscript mlogit_run.R", 1200, "electricity")
 
 # Plot profiling results
-os.system("python plot_profiling_results.py")
+os.system("python plot_benchmark_results.py")

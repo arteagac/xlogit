@@ -44,7 +44,7 @@ if(profile){
     res = c(res, format(model$est.stat$code == 1, width = 5, justify = "left", trim=T), " ")
     cat(res,"\n", sep="")
     cat(paste("mlogit", dataset, n_draws, time, model$logLik[1], mem, 0,
-        model$est.stat$code == 1, sep=","), file = "results/profiling_results.csv", sep="\n", append=TRUE)
+        model$est.stat$code == 1, sep=","), file = "results/benchmark_results.csv", sep="\n", append=TRUE)
 }else{
     model = run_estimation()
     summ = coef(summary(model))

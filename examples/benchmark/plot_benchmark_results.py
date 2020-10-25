@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import pandas as pd
 
-df = pd.read_csv("results/profiling_results.csv")
+df = pd.read_csv("results/benchmark_results.csv")
 
 libs = ['pylogit', 'mlogit', 'xlogit', 'xlogit_gpu']
 matplotlib.rcParams.update({'font.size': 14,

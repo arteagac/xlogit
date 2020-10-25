@@ -82,7 +82,8 @@ logger.setSilent()
 biogeme = bio.BIOGEME(database, logprob, numberOfDraws=n_draws,
 	numberOfThreads=n_cores)
 biogeme.modelName = 'MixedLogitArtificial'
-
+biogeme.generateHtml = False
+biogeme.generatePickle = False
 # Estimate the parameters
 results = biogeme.estimate()
 ellapsed = time() - start_time
@@ -90,6 +91,6 @@ ellapsed = time() - start_time
 print("draws={} cores={} time(s)={:.2f} LogLik={:.2f}".format(n_draws, n_cores,
                                   ellapsed, results.data.logLike))
 
-with open("results/results_apollo_biogeme.csv", 'a') as fw:
+with open("results/benchmark_results_apollo_biogeme.csv", 'a') as fw:
     fw.write("{},{},{},{},{}\n".format("biogeme", n_draws, n_cores,
                                  ellapsed, results.data.logLike))

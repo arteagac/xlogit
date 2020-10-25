@@ -5,7 +5,7 @@ import psutil
 import os
 import sys
 cupymem = cupy.get_default_memory_pool()
-output_file = "results/profiling_results.csv"
+output_file = "benchmark_results.csv"
 process = psutil.Process(os.getpid())
 
 

@@ -1,0 +1,54 @@
+draws=100 cores=16 time(s)=108.03 LogLik=-2294.78
+draws=100 cores=32 time(s)=45.53 LogLik=-2285.12
+draws=100 cores=64 time(s)=31.70 LogLik=-2291.75
+draws=500 cores=16 time(s)=545.96 LogLik=-2281.49
+draws=500 cores=32 time(s)=255.56 LogLik=-2275.53
+draws=500 cores=64 time(s)=222.19 LogLik=-2280.42
+draws=1000 cores=16 time(s)=1136.31 LogLik=-2279.12
+draws=1000 cores=32 time(s)=485.58 LogLik=-2277.57
+draws=1000 cores=64 time(s)=347.03 LogLik=-2278.93
+draws=1500 cores=16 time(s)=1583.97 LogLik=-2277.94
+draws=1500 cores=32 time(s)=768.10 LogLik=-2278.47
+draws=1500 cores=64 time(s)=505.60 LogLik=-2275.43
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  3.783958 
+draws=100 cores=16 time(s)=137.02 LogLik-2279.22
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  3.783958 
+draws=100 cores=32 time(s)=131.32 LogLik-2279.22
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  3.783958 
+draws=100 cores=64 time(s)=141.75 LogLik-2279.22
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.850224 
+draws=500 cores=16 time(s)=393.3 LogLik-2278.6
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.850224 
+draws=500 cores=32 time(s)=253.61 LogLik-2278.6
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.850224 
+draws=500 cores=64 time(s)=206.55 LogLik-2278.6
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.522258 
+draws=1000 cores=16 time(s)=604.18 LogLik-2278.85
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.522258 
+draws=1000 cores=32 time(s)=382 LogLik-2278.85
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.522258 
+draws=1000 cores=64 time(s)=264.26 LogLik-2278.85
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.382069 
+draws=1500 cores=16 time(s)=996.63 LogLik-2278.02
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.382069 
+draws=1500 cores=32 time(s)=695.25 LogLik-2278.02
+Apollo ignition sequence completed
+ Min abs eigenvalue of hessian    :  2.382069 
+draws=1500 cores=64 time(s)=415.1 LogLik-2278.02
+
+
+=== artificial dataset. biogeme_run.py ===
+
+
+=== artificial dataset. apollo_run.R ===

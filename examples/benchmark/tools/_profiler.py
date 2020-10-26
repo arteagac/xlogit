@@ -8,7 +8,7 @@ try:
     cupymem = cupy.get_default_memory_pool()
 except:
     pass
-output_file = "benchmark_results.csv"
+output_file = "results/benchmark_results.csv"
 process = psutil.Process(os.getpid())
 
 

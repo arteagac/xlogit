@@ -45,7 +45,7 @@ class ChoiceModel(ABC):
         self._reset_attributes()
         self._fit_start_time = time()
         self.isvars = [] if not isvars else isvars
-        self.asvars = list(set(varnames) - set(self.isvars))
+        self.asvars = [v for v in varnames if v not in self.isvars]
         self.varnames = varnames
         self.fit_intercept = fit_intercept
         self.alt = alt

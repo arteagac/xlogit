@@ -1,10 +1,14 @@
 """
-This file executes the benchmark. Check the README.md file
+This file executes the benchmark. Check the README.md file in this folder
 to make sure all the requirments are satisfied.
 """
 
 import os
 from tools import init_profiler_output_file
+
+# ==========================================
+# pylogit and mlogit benchmark
+# ==========================================
 init_profiler_output_file()
 
 
@@ -23,7 +27,6 @@ def print_estimates(command, n_draws, dataset):
 
 r_draws = 15
 # Run profiling
-
 profile_range_draws("python xlogit_run.py", r_draws, "artificial", True)
 profile_range_draws("python xlogit_run.py", r_draws, "artificial")
 profile_range_draws("python pylogit_run.py", r_draws, "artificial")
@@ -34,7 +37,6 @@ profile_range_draws("python pylogit_run.py", r_draws, "electricity")
 profile_range_draws("Rscript mlogit_run.R", r_draws, "electricity")
 
 # Print estimates
-
 print_estimates("python xlogit_run.py", 400, "artificial")
 print_estimates("python pylogit_run.py", 400, "artificial")
 print_estimates("Rscript mlogit_run.R", 400, "artificial")
@@ -42,5 +44,14 @@ print_estimates("python xlogit_run.py", 1200, "electricity")
 print_estimates("python pylogit_run.py", 1200, "electricity")
 print_estimates("Rscript mlogit_run.R", 1200, "electricity")
 
-# Plot profiling results
-os.system("python plot_benchmark_results.py")
+
+# ==========================================
+# apollo and biogeme benchmark
+# ==========================================
+# os.system("python benchmark_apollo_biogeme.py")
+
+
+# ==========================================
+# plot results
+# ==========================================
+os.system("python plot_results.py")

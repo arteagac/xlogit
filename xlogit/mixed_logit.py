@@ -152,6 +152,9 @@ class MixedLogit(ChoiceModel):
         for k, dist in enumerate(self.rvdist):
             if dist == 'ln':
                 betas_random[:, k, :] = dev.np.exp(betas_random[:, k, :])
+            elif dist == 'tn':
+                betas_random[:, k, :] = betas_random[:, k, :] *\
+                    (betas_random[:, k, :] > 0)
         return betas_random
 
     def _balance_panels(self, X, y, mixby):
@@ -180,13 +183,15 @@ class MixedLogit(ChoiceModel):
         return Xbal, ybal, panel_info
 
     def _compute_derivatives(self, betas, draws):
-        _, betas_random = self._transform_betas(betas, draws)
-        Kr = self.rvidx.sum()  # Number of random coeff
-        N, R = draws.shape[0], draws.shape[2]
+        N, R, Kr = draws.shape[0], draws.shape[2], self.rvidx.sum()
         der = dev.np.ones((N, Kr, R))
-        for k, dist in enumerate(self.rvdist):
-            if dist == 'ln':
-                der[:, k, :] = betas_random[:, k, :]
+        if any(set(self.rvdist).intersection(['ln', 'tn'])):  # If any ln or tn
+            _, betas_random = self._transform_betas(betas, draws)
+            for k, dist in enumerate(self.rvdist):
+                if dist == 'ln':
+                    der[:, k, :] = betas_random[:, k, :]
+                elif dist == 'tn':
+                    der[:, k, :] = 1*(betas_random[:, k, :] > 0)
         return der
 
     def _transform_betas(self, betas, draws):
@@ -205,15 +210,23 @@ class MixedLogit(ChoiceModel):
             draws = self._get_halton_draws(sample_size, n_draws,
                                            len(self.rvdist))
         else:
-            draws = self._get_random_normal_draws(sample_size, n_draws,
-                                                  len(self.rvdist))
-        return draws
+            draws = self._get_random_draws(sample_size, n_draws,
+                                           len(self.rvdist))
 
-    def _get_random_normal_draws(self, sample_size, n_draws, n_vars):
-        draws = [np.random.normal(0, 1, size=(sample_size, n_draws))
-                 for _ in range(n_vars)]
-        draws = np.stack(draws, axis=1)
-        return draws
+        for k, dist in enumerate(self.rvdist):
+            if dist in ['n', 'ln', 'tn']:  # Normal based
+                draws[:, k, :] = scipy.stats.norm.ppf(draws[:, k, :])
+            elif dist == 't':  # Triangular
+                draws_k = draws[:, k, :]
+                draws[:, k, :] = (np.sqrt(2*draws_k) - 1)*(draws_k <= .5) +\
+                    (1 - np.sqrt(2*(1 - draws_k)))*(draws_k > .5)
+            elif dist == 'u':  # Uniform
+                draws[:, k, :] = 2*draws[:, k, :] - 1
+
+        return draws  # (N,Kr,R)
+
+    def _get_random_draws(self, sample_size, n_draws, n_vars):
+        return np.random.uniform(size=(sample_size, n_vars, n_draws))
 
     def _get_halton_draws(self, sample_size, n_draws, n_vars, shuffled=False):
         primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47,
@@ -237,5 +250,4 @@ class MixedLogit(ChoiceModel):
                             shuffled=shuffled).reshape(sample_size, n_draws)
                  for i in range(n_vars)]
         draws = np.stack(draws, axis=1)
-        draws = scipy.stats.norm.ppf(draws)
         return draws

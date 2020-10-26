@@ -23,6 +23,10 @@ class MixedLogit(ChoiceModel):
             weights=None, randvars=None, mixby=None, base_alt=None,
             fit_intercept=False, init_coeff=None, maxiter=2000,
             random_state=None, n_draws=200, halton=True, verbose=1):
+
+        X, y, varnames, alt, isvars, id, weights, mixby\
+            = self._as_array(X, y, varnames, alt, isvars, id, weights, mixby)
+
         self._validate_inputs(X, y, alt, varnames, isvars, id, weights, mixby,
                               base_alt, fit_intercept, maxiter)
         self._pre_fit(alt, varnames, isvars, base_alt,

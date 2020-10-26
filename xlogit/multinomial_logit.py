@@ -13,7 +13,11 @@ class MultinomialLogit(ChoiceModel):
     def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
             weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
             maxiter=2000, random_state=None, verbose=1):
-        self._validate_inputs(X, y, alt, varnames, isvars, id, weights,
+
+        X, y, varnames, alt, isvars, id, weights, _\
+            = self._as_array(X, y, varnames, alt, isvars, id, weights, None)
+
+        self._validate_inputs(X, y, alt, varnames, isvars, id, weights, None,
                               base_alt, fit_intercept, maxiter)
 
         self._pre_fit(alt, varnames, isvars, base_alt, fit_intercept, maxiter)

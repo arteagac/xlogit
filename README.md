@@ -10,7 +10,7 @@ The following example analyzes choices of fishing modes. See the data [here](exa
 - `y`: Binary vector of choices (numpy array, shape [n_samples, ])
 - `varnames`: List of variable names. Its length must match number of columns in `X`
 - `alt`:  List of alternatives names or codes.
-- `randvars`: Variables with random distribution. `"n"` for normal and `"ln"` for log normal.
+- `randvars`: Variables with random distribution. (`"n"` normal, `"ln"` lognormal, `"t"` triangular, `"u"` uniform, `"tn"` truncated normal)
 
 The current version of `xlogit` only supports data in long format.
 
@@ -62,8 +62,8 @@ To enable GPU processing you must install the CuPy library  ([see installation i
 
 ## Notes:
 The current version allows estimation of:
-- Mixed logit models with normal and log-normal distributions.
-- Mixed logit models with panel data
+- Mixed logit models with normal, lognormal, triangular, uniform, and truncated normal distributions.
+- Mixed logit models with panel data (balanced or unbalanced).
 - Multinomial Logit Models: Models with individual specific variables
 - Conditional Logit Models: Models with alternative specific variables
 - Models with both, individual and alternative specific variables

@@ -52,16 +52,19 @@ class ChoiceModel(ABC):
         self.base_alt = alt[0] if base_alt is None else base_alt
         self.maxiter = maxiter
 
-    def _post_fit(self, optimization_res, coeff_names, N, verbose=1):
+    def _post_fit(self, optimization_res, coeff_names, sample_size, verbose=1):
         self.convergence = optimization_res['success']
         self.coeff_ = optimization_res['x']
         self.stderr = np.sqrt(np.diag(optimization_res['hess_inv']))
         self.zvalues = self.coeff_/self.stderr
-        self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=N)  # two tailed test
+        self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=sample_size)
         self.loglikelihood = -optimization_res['fun']
         self.coeff_names = coeff_names
         self.total_iter = optimization_res['nit']
         self.estim_time_sec = time() - self._fit_start_time
+        self.sample_size = sample_size
+        self.aic = 2*len(self.coeff_) - 2*self.loglikelihood
+        self.bic = np.log(sample_size)*len(self.coeff_) - 2*self.loglikelihood
 
         if self.convergence and verbose > 0:
             print("Estimation succesfully completed after {} iterations. "
@@ -169,3 +172,6 @@ class ChoiceModel(ABC):
         print("Significance:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1")
         print("")
         print("Log-Likelihood= {:.3f}".format(self.loglikelihood))
+        print("AIC= {:.3f}".format(self.aic))
+        print("BIC= {:.3f}".format(self.bic))
+        print("Estimation time= {:.1f} seconds".format(self.estim_time_sec))

@@ -73,7 +73,7 @@ for xl in ['xlogit', 'xlogit_gpu']:
 
 
 def plot_time_benchmark_apollo_biogeme(df):
-    plt.figure(figsize=(12, 7))
+    plt.figure(figsize=(9, 7))
     for li, lib in enumerate(['apollo', 'biogeme']):
         for m, cores in enumerate(r_cores):
             idx = (df.library == lib) & (df.cores == cores)

@@ -20,16 +20,17 @@ The current version of `xlogit` only supports data in long format.
 import pandas as pd
 df = pd.read_csv("examples/data/fishing_long.csv")
 
-X = df[['price', 'catch']].values
-y = df['choice'].values
+X = df[['price', 'catch']]
+y = df['choice']
 
 # Fit the model with xlogit
 from xlogit import MixedLogit
 model = MixedLogit()
-model.fit(X, y, 
+model.fit(X, y,
           varnames=['price', 'catch'],
-          randvars={'price': 'n', 'catch': 'n'},
-          alt=['beach', 'boat', 'charter', 'pier'])
+          id=df['id'],
+          alt=df['alt'],
+          randvars={'price': 'n', 'catch': 'n'})
 model.summary()
 ```
 
@@ -47,7 +48,9 @@ sd.catch             1.5857201     0.3746104     4.2329844      0.000109 ***
 Significance:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
 Log-Likelihood= -1300.227
-
+AIC= 2608.454
+BIC= 2628.754
+Estimation time= 0.7 seconds
 ```
 For more examples of `xlogit` see [this Jupyter Notebook](https://github.com/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb).
 To test how fast is MixedLogit with GPU processing you can use Google Colaboratory that provides some GPU processing for free. In the Jupyter Notebook above you just need to click the "Open in Colab" button to run your analysis.

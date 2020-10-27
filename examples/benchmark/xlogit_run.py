@@ -21,7 +21,7 @@ if dataset == "electricity":
     randvars = {'pf': 'n', 'cl': 'n', 'loc': 'n', 'wk': 'n',
                 'tod': 'n', 'seas': 'n'}
     alt = [1, 2, 3, 4]
-    mixby = df.id.values
+    panel = df.id.values
 
 # ==== Artificial dataset
 if dataset == "artificial":
@@ -32,7 +32,7 @@ if dataset == "artificial":
     y = df['choice'].values
     randvars = {'meals': 'n', 'petfr': 'n', 'emipp': 'n'}
     alt = [1, 2, 3]
-    mixby = None
+    panel = None
 
 if not use_gpu:
     device.disable_gpu_acceleration()
@@ -43,7 +43,7 @@ if profile:
 np.random.seed(0)
 model = MixedLogit()
 model.fit(X, y, varnames, alt=alt, n_draws=n_draws,
-          mixby=mixby, verbose=0, randvars=randvars)
+          panel=panel, verbose=0, randvars=randvars)
 
 if profile:
     ellapsed, max_ram, max_gpu = profiler.stop()

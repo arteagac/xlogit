@@ -20,14 +20,14 @@ class MixedLogit(ChoiceModel):
 
     # X: (N, J, K)
     def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
-            weights=None, randvars=None, mixby=None, base_alt=None,
+            weights=None, randvars=None, panel=None, base_alt=None,
             fit_intercept=False, init_coeff=None, maxiter=2000,
             random_state=None, n_draws=200, halton=True, verbose=1):
 
-        X, y, varnames, alt, isvars, id, weights, mixby\
-            = self._as_array(X, y, varnames, alt, isvars, id, weights, mixby)
+        X, y, varnames, alt, isvars, id, weights, panel\
+            = self._as_array(X, y, varnames, alt, isvars, id, weights, panel)
 
-        self._validate_inputs(X, y, alt, varnames, isvars, id, weights, mixby,
+        self._validate_inputs(X, y, alt, varnames, isvars, id, weights, panel,
                               base_alt, fit_intercept, maxiter)
         self._pre_fit(alt, varnames, isvars, base_alt,
                       fit_intercept, maxiter)
@@ -38,8 +38,8 @@ class MixedLogit(ChoiceModel):
         X, Xnames = self._setup_design_matrix(X)
         J, K, R = X.shape[1], X.shape[2], n_draws
 
-        if mixby is not None:  # If panel
-            X, y, panel_info = self._balance_panels(X, y, mixby)
+        if panel is not None:  # If panel
+            X, y, panel_info = self._balance_panels(X, y, panel)
             N, P = panel_info.shape
         else:
             N, P = X.shape[0], 1
@@ -161,9 +161,9 @@ class MixedLogit(ChoiceModel):
                     (betas_random[:, k, :] > 0)
         return betas_random
 
-    def _balance_panels(self, X, y, mixby):
+    def _balance_panels(self, X, y, panel):
         _, J, K = X.shape
-        _, p_obs = np.unique(mixby, return_counts=True)
+        _, p_obs = np.unique(panel, return_counts=True)
         p_obs = (p_obs/J).astype(int)
         N = len(p_obs)  # This is the new N after accounting for panels
         P = np.max(p_obs)  # Panel length for all records

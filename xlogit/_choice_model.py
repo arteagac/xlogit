@@ -40,7 +40,7 @@ class ChoiceModel(ABC):
             maxiter=2000, random_state=None):
         pass
 
-    def _as_array(self, X, y, varnames, alt, isvars, id, weights, mixby):
+    def _as_array(self, X, y, varnames, alt, isvars, id, weights, panel):
         X = np.asarray(X)
         y = np.asarray(y)
         varnames = np.asarray(varnames) if varnames is not None else None
@@ -48,8 +48,8 @@ class ChoiceModel(ABC):
         isvars = np.asarray(isvars) if isvars is not None else None
         id = np.asarray(id) if id is not None else None
         weights = np.asarray(weights) if weights is not None else None
-        mixby = np.asarray(mixby) if mixby is not None else None
-        return X, y, varnames, alt, isvars, id, weights, mixby
+        panel = np.asarray(panel) if panel is not None else None
+        return X, y, varnames, alt, isvars, id, weights, panel
 
     def _pre_fit(self, alt, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
@@ -134,7 +134,7 @@ class ChoiceModel(ABC):
 
         return X, names
 
-    def _validate_inputs(self, X, y, alt, varnames, isvars, id, weights, mixby,
+    def _validate_inputs(self, X, y, alt, varnames, isvars, id, weights, panel,
                          base_alt, fit_intercept, max_iterations):
         if varnames is None:
             raise ValueError('The parameter varnames is required')

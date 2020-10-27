@@ -16,11 +16,11 @@ class MultinomialLogit(ChoiceModel):
 
         X, y, varnames, alt, isvars, id, weights, _\
             = self._as_array(X, y, varnames, alt, isvars, id, weights, None)
-
         self._validate_inputs(X, y, alt, varnames, isvars, id, weights, None,
                               base_alt, fit_intercept, maxiter)
 
         self._pre_fit(alt, varnames, isvars, base_alt, fit_intercept, maxiter)
+        X, y, panel = self._arrange_long_format(X, y, id, alt)
 
         if random_state is not None:
             np.random.seed(random_state)

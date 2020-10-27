@@ -134,6 +134,32 @@ class ChoiceModel(ABC):
 
         return X, names
 
+    def _check_long_format_consistency(self, id, alt, sorted_idx):
+        alt = alt[sorted_idx]
+        uq_alt = np.unique(alt)
+        expect_alt = np.tile(uq_alt, int(len(id)/len(uq_alt)))
+        if not np.array_equal(alt, expect_alt):
+            raise ValueError('inconsistent alt values in long format')
+        _, obs_by_id = np.unique(id, return_counts=True)
+        if not np.all(obs_by_id/len(uq_alt)):  # Multiple of J
+            raise ValueError('inconsistent alt and id values in long format')
+
+    def _arrange_long_format(self, X, y, id, alt, panel=None):
+        if id is not None:
+            pnl = panel if panel is not None else np.ones(len(id))
+            alt = alt.astype(str)
+            alt = alt if len(alt) == len(id)\
+                else np.tile(alt, int(len(id)/len(alt)))
+            cols = np.zeros(len(id), dtype={'names': ['panel', 'id', 'alt'],
+                                            'formats': ['<f4', '<f4', '<U64']})
+            cols['panel'], cols['id'], cols['alt'] = pnl, id, alt
+            sorted_idx = np.argsort(cols, order=['panel', 'id', 'alt'])
+            X, y = X[sorted_idx], y[sorted_idx]
+            if panel is not None:
+                panel = panel[sorted_idx]
+            self._check_long_format_consistency(id, alt, sorted_idx)
+        return X, y, panel
+
     def _validate_inputs(self, X, y, alt, varnames, isvars, id, weights, panel,
                          base_alt, fit_intercept, max_iterations):
         if varnames is None:

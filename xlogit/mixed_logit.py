@@ -35,6 +35,7 @@ class MixedLogit(ChoiceModel):
         if random_state is not None:
             np.random.seed(random_state)
 
+        X, y, panel = self._arrange_long_format(X, y, id, alt, panel)
         X, Xnames = self._setup_design_matrix(X)
         J, K, R = X.shape[1], X.shape[2], n_draws
 

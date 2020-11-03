@@ -12,7 +12,9 @@ to make sure all the requirments are satisfied.
 
 import os
 from tools import init_profiler_output_file
-
+import cupy as cp
+if cupy.asnumpy(cupy.array([1, 2]).dot(cupy.array([1, 2]))) == 5:
+    print("Cupy is installed and properly configured")
 # ==========================================
 # pylogit and mlogit benchmark
 # ==========================================

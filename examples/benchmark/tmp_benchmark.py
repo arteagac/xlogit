@@ -1,4 +1,11 @@
 """
+curl -L -O https://github.com/arteagac/xlogit/archive/master.zip
+unzip master.zip
+cd xlogit/examples/benchmark
+pip3 install benchmark_requirements.py
+python -m pip install -U setuptools pip
+pip3 install cupy-cuda110
+
 This file executes the benchmark. Check the README.md file in this folder
 to make sure all the requirments are satisfied.
 """

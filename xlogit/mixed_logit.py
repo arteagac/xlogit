@@ -55,6 +55,8 @@ class MixedLogit(ChoiceModel):
         self.rvidx = np.zeros(K, dtype=bool)
         self.rvidx[rvpos] = True  # True: Random var, False: Fixed var
         self.rvdist = list(self.randvars.values())
+        self.verbose = verbose
+        self.total_fun_eval = 0
 
         if weights is not None:
             weights = weights*(N/np.sum(weights))  # Normalize weights
@@ -76,12 +78,13 @@ class MixedLogit(ChoiceModel):
             if weights is not None:
                 weights = dev.to_gpu(weights)
             if verbose > 0:
-                print("**** GPU Processing Enabled ****")
+                print("Estimation with GPU processing enabled.")
 
-        optimizat_res = minimize(self._loglik_gradient, betas, jac=True,
-                                 args=(X, y, panel_info, draws, weights),
-                                 method='BFGS', tol=1e-5,
-                                 options={'gtol': 1e-4, 'maxiter': maxiter})
+        optimizat_res = \
+            minimize(self._loglik_gradient, betas, jac=True, method='BFGS',
+                     args=(X, y, panel_info, draws, weights), tol=1e-5,
+                     options={'gtol': 1e-4, 'maxiter': maxiter,
+                              'disp': verbose > 0})
 
         fvpos = list(set(range(len(Xnames))) - set(rvpos))
         coeff_names = np.concatenate((Xnames[fvpos], Xnames[rvpos],
@@ -142,6 +145,10 @@ class MixedLogit(ChoiceModel):
 
         if dev.using_gpu:
             grad, loglik = dev.to_cpu(grad), dev.to_cpu(loglik)
+        self.total_fun_eval += 1
+        if self.verbose > 1:
+            print("Evaluation {}  Log-Lik.={:.2f}".format(self.total_fun_eval,
+                                                          -loglik))
         return -loglik, -grad
 
     def _prob_product_across_panels(self, pch, panel_info):

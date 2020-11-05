@@ -77,10 +77,6 @@ class ChoiceModel(ABC):
         self.aic = 2*len(self.coeff_) - 2*self.loglikelihood
         self.bic = np.log(sample_size)*len(self.coeff_) - 2*self.loglikelihood
 
-        if self.convergence and verbose > 0:
-            print("Estimation succesfully completed after {} iterations. "
-                  "Use .summary() to see the estimated values"
-                  .format(self.total_iter))
         if not self.convergence and verbose > 0:
             print("**** The optimization did not converge after {} "
                   "iterations. ****".format(self.total_iter))
@@ -188,6 +184,7 @@ class ChoiceModel(ABC):
             print("WARNING: Convergence was not reached during estimation. "
                   "The given estimates may not be reliable")
             print('*'*50)
+        print("Estimation time= {:.1f} seconds".format(self.estim_time_sec))
         print("-"*75)
         print("{:19} {:>13} {:>13} {:>13} {:>13}"
               .format("Coefficient", "Estimate", "Std.Err.", "z-val", "P>|z|"))
@@ -212,4 +209,3 @@ class ChoiceModel(ABC):
         print("Log-Likelihood= {:.3f}".format(self.loglikelihood))
         print("AIC= {:.3f}".format(self.aic))
         print("BIC= {:.3f}".format(self.bic))
-        print("Estimation time= {:.1f} seconds".format(self.estim_time_sec))

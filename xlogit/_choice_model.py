@@ -55,7 +55,7 @@ class ChoiceModel(ABC):
                  fit_intercept, maxiter):
         self._reset_attributes()
         self._fit_start_time = time()
-        self.isvars = [] if isvars is None else isvars
+        self.isvars = [] if isvars is None else list(isvars)
         self.asvars = [v for v in varnames if v not in self.isvars]
         self.varnames = list(varnames)  # Easier to handle with lists
         self.fit_intercept = fit_intercept
@@ -88,6 +88,7 @@ class ChoiceModel(ABC):
         isvars = self.isvars.copy()
         asvars = self.asvars.copy()
         varnames = self.varnames.copy()
+        print(type(isvars))
 
         if self.fit_intercept:
             isvars.insert(0, '_intercept')

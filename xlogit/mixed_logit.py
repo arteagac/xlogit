@@ -65,7 +65,7 @@ class MixedLogit(ChoiceModel):
         draws = self._generate_draws(N, R, halton)  # (N,Kr,R)
         n_coeff = K + len(rvpos)
         if init_coeff is None:
-            betas = np.repeat(.0, K + len(rvpos))
+            betas = np.repeat(.1, K + len(rvpos))
         else:
             betas = init_coeff
             if len(init_coeff) != n_coeff:

@@ -5,17 +5,18 @@ to make sure all the requirments are satisfied.
 
 import os
 from tools import init_profiler_output_files, log
-import cupy as cp
 import sys
 
-init_profiler_output_files()
-mini = len(sys.argv) == 2 and sys.argv[1] == 'mini'
+try:
+    import cupy as cp
+    if cp.asnumpy(cp.array([1, 2]).dot(cp.array([1, 2]))) == 5:
+        log("**** GPU PROCESSING PROPERLY INITIALIZED ****")
+except:
+    log("**** NO GPU CONFIGURED. XLOGIT WON'T BE ABLE TO USE GPU ****")
+    pass
 
-# ==========================================
-# pylogit and mlogit benchmark
-# ==========================================
-if cp.asnumpy(cp.array([1, 2]).dot(cp.array([1, 2]))) == 5:
-    print("Cupy is installed and properly configured")
+mini = len(sys.argv) == 2 and sys.argv[1] == 'mini'
+init_profiler_output_files()
 
 
 def profile_range_draws(command, r_draws, dataset, usegpu=False):
@@ -38,9 +39,16 @@ def print_estimates(command, n_draws, dataset):
     os.system("{} {} {} {} estim".format(command, n_draws, dataset, 0))
 
 
-r_draws = 4 if mini else 15
+# ==========================================
+# pylogit and mlogit benchmark
+# ==========================================
+if mini:
+    r_draws = 4
+else:
+    r_draws = 15
 
 # Run profiling
+log("\n\n********* PYLOGIT AND MLOGIT BENCHMARK *********")
 profile_range_draws("python xlogit_run.py", r_draws, "artificial", True)
 profile_range_draws("python xlogit_run.py", r_draws, "artificial")
 profile_range_draws("python pylogit_run.py", r_draws, "artificial")
@@ -51,6 +59,7 @@ profile_range_draws("python pylogit_run.py", r_draws, "electricity")
 profile_range_draws("Rscript mlogit_run.R", r_draws, "electricity")
 
 # Print estimates
+log("\n\n********* ESTIMATES (COEFF AND STD.ERR.)*********")
 print_estimates("python xlogit_run.py", 400, "artificial")
 print_estimates("python pylogit_run.py", 400, "artificial")
 print_estimates("Rscript mlogit_run.R", 400, "artificial")
@@ -68,7 +77,7 @@ if mini:
 else:
     r_draws = [100, 500, 1000, 1500]
     r_cores = [16, 32, 64]
-
+log("\n\n********* APOLLO AND BIOGEME BENCHMARK *********")
 profile_range_draws_and_cores("python biogeme_run.py", r_draws, r_cores)
 os.environ['OPENBLAS_NUM_THREADS'] = "1"  # Avoids segfault error
 profile_range_draws_and_cores("Rscript apollo_run.R", r_draws, r_cores)

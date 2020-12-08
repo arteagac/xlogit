@@ -63,14 +63,14 @@ if(profile){
     varnames = row.names(summ)
     est_coeff = summ[,"Estimate"]
     est_stder = summ[,"Std. Error"]
-    log("\nVariable    Estimate   Std.Err.")
+    log("Variable    Estimate   Std.Err.")
     for (i in 1:nrow(summ)){
         log(paste(c(format(varnames[i], width=10, trim=T),
             format(est_coeff[i], width=10, nsmall = 5, digits = 5, trim=T),
                 format(est_stder[i], width=9, nsmall = 5, digits = 5, trim=T)),
                 collapse=""))
     }
-    log(paste("\nLog.Lik:   ", format(logLik(model)[1], nsmall = 2, digits = 2, trim=T)))
+    log(paste("Log.Lik:   ", format(logLik(model)[1], nsmall = 2, digits = 2, trim=T)))
 }
 
 

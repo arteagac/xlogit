@@ -127,6 +127,7 @@ dfc['cavg'] = dfc[['c'+str(i) for i in r_draws]].values.mean(axis=1)
 dfc = dfc.round(1)
 
 # Print in a nice format
+log("\n\n********* TABLE COMPARISON ESTIMATION TIME *********")
 log("{:12} {:^28} {:^37}".format("", "Estimation time",
                                  "Compared to xlogit_gpu"))
 c = dfc.columns.values

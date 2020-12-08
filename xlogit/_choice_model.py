@@ -88,7 +88,6 @@ class ChoiceModel(ABC):
         isvars = self.isvars.copy()
         asvars = self.asvars.copy()
         varnames = self.varnames.copy()
-        print(type(isvars))
 
         if self.fit_intercept:
             isvars.insert(0, '_intercept')

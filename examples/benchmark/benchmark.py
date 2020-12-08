@@ -9,7 +9,7 @@ import sys
 
 try:
     import cupy as cp
-    if cp.asnumpy(cp.array([1, 2]).dot(cp.array([1, 2]))) == 5:
+    if cp.asnumpy(cp.ones(10000).dot(cp.ones(10000))) == 10000:
         log("**** GPU PROCESSING PROPERLY INITIALIZED ****")
 except:
     log("**** NO GPU CONFIGURED. XLOGIT WON'T BE ABLE TO USE GPU ****")
@@ -63,9 +63,9 @@ log("\n\n********* ESTIMATES (COEFF AND STD.ERR.)*********")
 print_estimates("python xlogit_run.py", 400, "artificial")
 print_estimates("python pylogit_run.py", 400, "artificial")
 print_estimates("Rscript mlogit_run.R", 400, "artificial")
-print_estimates("python xlogit_run.py", 400, "electricity")
-print_estimates("python pylogit_run.py", 400, "electricity")
-print_estimates("Rscript mlogit_run.R", 400, "electricity")
+print_estimates("python xlogit_run.py", 600, "electricity")
+print_estimates("python pylogit_run.py", 600, "electricity")
+print_estimates("Rscript mlogit_run.R", 600, "electricity")
 
 
 # ==========================================

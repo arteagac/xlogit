@@ -6,15 +6,10 @@ to make sure all the requirments are satisfied.
 import os
 from tools import init_profiler_output_files, log
 import sys
+sys.path.append("../../")  # Path of xlogit library root folder.
+from xlogit import device
 
-try:
-    import cupy as cp
-    if cp.asnumpy(cp.ones(10000).dot(cp.ones(10000))) == 10000:
-        log("**** GPU PROCESSING PROPERLY INITIALIZED ****")
-except:
-    log("**** NO GPU CONFIGURED. XLOGIT WON'T BE ABLE TO USE GPU ****")
-    pass
-
+device.check_if_gpu_available()
 mini = len(sys.argv) == 2 and sys.argv[1] == 'mini'
 init_profiler_output_files()
 

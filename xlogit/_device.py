@@ -21,7 +21,7 @@ class Device():
             self._using_gpu = True
         else:
             print("CuPy not found. Verify it is properly installed")
-    
+
     def disable_gpu_acceleration(self):
         self.np = numpy
         self._using_gpu = False
@@ -35,6 +35,14 @@ class Device():
 
     def to_gpu(self, arr):
         return cupy.asarray(arr)
+
+    def check_if_gpu_available(self):
+        try:
+            a, b = cupy.ones(100), cupy.ones(100)
+            if cupy.asnumpy(cupy.einsum("i,j->", a, b)) == 10000:
+                print("CuPy properly installed. xlogit will use GPU")
+        except Exception:
+            print("CuPy NOT found. xlogit won't use GPU processing")
 
 
 device = Device()

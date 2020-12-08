@@ -20,7 +20,7 @@ Download CUDA toolkit v11 from https://developer.nvidia.com/cuda-downloads and f
 Install cupy depending on the version of CUDA toolkit selected. For instance, for v11 the command would be:  
 `pip install cupy-cuda110`  
 For other versions see: https://docs.cupy.dev/en/stable/install.html  
-
+`pip uninstall & pip install  biogeme==3.2.6 --no-cache-dir`
 # 3. Install R tools
 ## 3.1 Download and install R
 Dowload link: https://cran.r-project.org/bin/windows/base/
@@ -28,7 +28,10 @@ Make sure Rscript command is available in the console. In case it is not, add th
 ## 3.2 Install the mlogit package 
 Administrator permissions are needed.  
 `Rscript -e "install.packages('mlogit', repos='http://cran.us.r-project.org')"`
-
+`install.packages("devtools")`
+`require(devtools)`
+`install_version("mlogit", version = "1.1-1")`
+`install_version("apollo", version = "0.1.0")`
 # 4. Run benchmark
 `python benchmark.py`  
 The results are saved in the 'results' folder and shown in console.

@@ -1,0 +1,8 @@
+pylogit==0.2.2
+biogeme==3.2.6
+cupy-cuda110==8.2.0
+matplotlib
+psutil
+pandas
+scipy
+numpy

@@ -1,6 +1,0 @@
-pylogit
-matplotlib
-psutil
-pandas
-scipy
-numpy

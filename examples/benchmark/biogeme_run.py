@@ -1,6 +1,6 @@
 """
 This code estimates a mixed logit model for the artificial
-dataset using biogeme. To use this code you must first 
+dataset using biogeme. To use this code you must first
 install biogeme by executing:
 
 pip install biogeme
@@ -16,6 +16,7 @@ import biogeme.messaging as msg
 from biogeme.expressions import Beta, bioDraws, log, MonteCarlo
 import sys
 from time import time
+from tools import log as plog
 
 data_folder = "../data/"
 
@@ -80,7 +81,7 @@ logger.setSilent()
 
 # Create the Biogeme object
 biogeme = bio.BIOGEME(database, logprob, numberOfDraws=n_draws,
-	numberOfThreads=n_cores)
+                      numberOfThreads=n_cores)
 biogeme.modelName = 'MixedLogitArtificial'
 biogeme.generateHtml = False
 biogeme.generatePickle = False
@@ -88,9 +89,9 @@ biogeme.generatePickle = False
 results = biogeme.estimate()
 ellapsed = time() - start_time
 
-print("draws={} cores={} time(s)={:.2f} LogLik={:.2f}".format(n_draws, n_cores,
-                                  ellapsed, results.data.logLike))
+plog("draws={} cores={} time(s)={:.2f} LogLik={:.2f}"
+     .format(n_draws, n_cores, ellapsed, results.data.logLike))
 
 with open("results/benchmark_results_apollo_biogeme.csv", 'a') as fw:
     fw.write("{},{},{},{},{}\n".format("biogeme", n_draws, n_cores,
-                                 ellapsed, results.data.logLike))
+                                       ellapsed, results.data.logLike))

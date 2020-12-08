@@ -1,8 +1,10 @@
 # This code estimates a mixed logit model for the artificial
 # dataset using apollo. For installation:
-# Install R version 4.0.3 and then run
+# Make sure the versions of g++, gcc, and gfortran match, otherwise you'll get an error
+# Install R version 4.0.3 and then run (may need admin permissions)
+# install.packages("devtools")
 # install.packages("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/RcppArmadillo_0.9.850.1.0.tar.gz",repos=NULL,type="source")
-# install.packages(c("maxLik", "mnormt", "mvtnorm", "coda", "sandwich", "randtoolbox", "numDeriv", "RSGHB", "Deriv"))
+# install.packages(c("maxLik", "mnormt", "mvtnorm", "coda", "sandwich", "randtoolbox", "numDeriv", "RSGHB", "Deriv"), "RcppEigen")
 # install.packages("http://www.apollochoicemodelling.com/files/apollo_0.1.0.tar.gz",repos=NULL,type="source")
 # These specific versions need to be kept. Otherwise Apollo won't install
 
@@ -11,7 +13,7 @@ if(length(args)== 2){
   n_draws = strtoi(args[1])
   n_cores = strtoi(args[2])
 }else{
-  n_draws = 500
+  n_draws = 100
   n_cores = 6
 }
 
@@ -160,8 +162,12 @@ estimate_settings = list(silent=TRUE, writeIter=FALSE)
 #---- FORMATTED OUTPUT (TO SCREEN)                               ----
 # ----------------------------------------------------------------- #
 
-cat(c("draws=",n_draws," cores=", n_cores, " time(s)=", round(model$timeTaken, digits = 2),
-     " LogLik", round(model$LLout, digits = 2)), sep="")
-cat("\n")
+log = function(msg){
+    cat(msg,"\n", sep="")
+    cat(msg, file="results/benchmark_results.out", sep="\n", append=TRUE)
+}
+
+log(paste("draws=",n_draws," cores=", n_cores, " time(s)=", round(model$timeTaken, digits = 2),
+     " LogLik", round(model$LLout, digits = 2)))
 cat(paste("apollo", n_draws, n_cores, model$timeTaken, model$LLout, sep=","), 
 file = "results/benchmark_results_apollo_biogeme.csv", sep="\n", append=TRUE)

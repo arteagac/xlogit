@@ -5,6 +5,7 @@ import sys
 import pylogit as pl
 import io
 from collections import OrderedDict
+from tools import log
 
 
 data_folder = "../data/"
@@ -63,9 +64,9 @@ sys.stdout, sys.stderr = sys.__stdout__, sys.__stderr__  # Enable print
 
 if profile:
     ellapsed, max_ram, max_gpu = profiler.stop()
-    print("{:6} {:7.2f} {:11.2f} {:7.3f} {:7.3f} {}"
-          .format(n_draws, ellapsed, model.log_likelihood,
-                  max_ram - ini_ram, max_gpu, model.estimation_success))
+    log("{:6} {:7.2f} {:11.2f} {:7.3f} {:7.3f} {}"
+        .format(n_draws, ellapsed, model.log_likelihood,
+                max_ram - ini_ram, max_gpu, model.estimation_success))
     profiler.export('pylogit', dataset, n_draws, ellapsed,
                     model.log_likelihood,
                     max_ram - ini_ram, max_gpu, model.estimation_success)
@@ -74,8 +75,8 @@ if not profile:
     summ = model.summary
     names, coeff = summ.index.values, summ.parameters.values
     stderr = summ.std_err.values
-    print("Variable    Estimate   Std.Err.")
+    log("Variable    Estimate   Std.Err.")
     for i in range(len(names)):
-        print("{:9}  {:9.5}  {:9.5}".format(names[i][:8],
-                                            coeff[i], stderr[i]))
-    print("Log.Lik:   {:9.2f}".format(model.log_likelihood))
+        log("{:9}  {:9.5}  {:9.5}".format(names[i][:8],
+                                          coeff[i], stderr[i]))
+    log("Log.Lik:   {:9.2f}".format(model.log_likelihood))

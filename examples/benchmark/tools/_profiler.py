@@ -8,7 +8,9 @@ try:
     cupymem = cupy.get_default_memory_pool()
 except:
     pass
-output_file = "results/benchmark_results.csv"
+output_file = "results/benchmark_results.out"
+results_file = "results/benchmark_results.csv"
+ab_results_file = "results/benchmark_results_apollo_biogeme.csv"
 process = psutil.Process(os.getpid())
 
 
@@ -23,11 +25,23 @@ def curr_gpu():
     return cupymem.total_bytes()/(1024*1024*1024)
 
 
-def init_profiler_output_file():
+def init_profiler_output_files(including_apollo_biogeme=True):
     if os.path.exists(output_file):
         os.remove(output_file)
-    with open(output_file, 'a') as fw:
+    if os.path.exists(results_file):
+        os.remove(results_file)
+    if os.path.exists(ab_results_file) and including_apollo_biogeme:
+        os.remove(ab_results_file)
+        with open(ab_results_file, 'a') as fw:
+            fw.write("library,draws,cores,time,loglik\n")
+    with open(results_file, 'a') as fw:
         fw.write("library,dataset,draws,time,loglik,ram,gpu,converg\n")
+
+
+def log(msg):
+    with open(output_file, 'a') as fw:
+        fw.write(msg+'\n')
+    print(msg)
 
 
 class Profiler():
@@ -55,7 +69,7 @@ class Profiler():
 
     def export(self, library, dataset,
                n_draws, ellapsed, loglik, ram, gpu, success):
-        with open(output_file, 'a') as fw:
+        with open(results_file, 'a') as fw:
             fw.write("{},{},{},{},{},{},{},{}\n"
                      .format(library, dataset, n_draws, ellapsed, loglik,
                              ram, gpu, success))

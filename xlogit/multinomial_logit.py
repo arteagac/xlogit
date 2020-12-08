@@ -25,6 +25,9 @@ class MultinomialLogit(ChoiceModel):
         if random_state is not None:
             np.random.seed(random_state)
 
+        X, Xnames = self._setup_design_matrix(X)
+        y = y.reshape(X.shape[0], X.shape[1])
+
         if init_coeff is None:
             betas = np.repeat(.0, X.shape[2])
         else:
@@ -32,9 +35,6 @@ class MultinomialLogit(ChoiceModel):
             if len(init_coeff) != X.shape[1]:
                 raise ValueError("The size of initial_coeff must be: "
                                  + int(X.shape[1]))
-
-        X, Xnames = self._setup_design_matrix(X)
-        y = y.reshape(X.shape[0], X.shape[1])
 
         # Call optimization routine
         optimizat_res = self._bfgs_optimization(betas, X, y, weights, maxiter)

@@ -263,3 +263,7 @@ class MixedLogit(ChoiceModel):
                  for i in range(n_vars)]
         draws = np.stack(draws, axis=1)
         return draws
+
+    @staticmethod
+    def check_if_gpu_available():
+        dev.check_if_gpu_available()

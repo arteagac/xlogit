@@ -7,9 +7,9 @@ import os
 from tools import init_profiler_output_files, log
 import sys
 sys.path.append("../../")  # Path of xlogit library root folder.
-from xlogit import device
+from xlogit import MixedLogit
 
-device.check_if_gpu_available()
+MixedLogit.check_if_gpu_available()
 mini = len(sys.argv) == 2 and sys.argv[1] == 'mini'
 init_profiler_output_files()
 

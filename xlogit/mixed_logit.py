@@ -266,4 +266,8 @@ class MixedLogit(ChoiceModel):
 
     @staticmethod
     def check_if_gpu_available():
-        dev.check_if_gpu_available()
+        X = np.array([[2, 1], [1, 3], [3, 1], [2, 4]])
+        y = np.array([0, 1, 0, 1])
+        model = MixedLogit()
+        model.fit(X, y, varnames=["a", "b"], alt=["1", "2"], n_draws=500,
+                  randvars={'a': 'n', 'b': 'n'}, maxiter=0, verbose=0)

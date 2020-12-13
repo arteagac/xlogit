@@ -155,18 +155,20 @@ Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
 
 
 ********* ESTIMATES (COEFF AND STD.ERR.)*********
+
+
 === artificial dataset. xlogit_run.py ===
 Variable    Estimate   Std.Err.
 price        -1.0619     0.1656
 time         -1.4946    0.16843
 conven       0.91915     0.1411
 comfort       1.1083    0.18099
-nonsig1     0.067249    0.11996
-nonsig2      0.01504    0.13065
-nonsig3     0.036487    0.11255
 meals         1.7413    0.21099
 petfr         4.0055    0.39672
 emipp        -2.1052    0.23334
+nonsig1     0.067249    0.11996
+nonsig2      0.01504    0.13065
+nonsig3     0.036487    0.11255
 sd.meals     0.75911    0.23823
 sd.petfr      -1.373    0.28135
 sd.emipp      1.0502    0.14918

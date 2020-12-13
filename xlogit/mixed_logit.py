@@ -38,6 +38,7 @@ class MixedLogit(ChoiceModel):
         X, y, panel = self._arrange_long_format(X, y, id, alt, panel)
         X, Xnames = self._setup_design_matrix(X)
         J, K, R = X.shape[1], X.shape[2], n_draws
+        Kr = len(randvars)
 
         if panel is not None:  # If panel
             X, y, panel_info = self._balance_panels(X, y, panel)
@@ -51,10 +52,14 @@ class MixedLogit(ChoiceModel):
 
         self.n_draws = n_draws
         self.randvars = randvars
-        rvpos = [np.where(Xnames == rv)[0][0] for rv in self.randvars.keys()]
-        self.rvidx = np.zeros(K, dtype=bool)
-        self.rvidx[rvpos] = True  # True: Random var, False: Fixed var
-        self.rvdist = list(self.randvars.values())
+        self.rvidx, self.rvdist = [], []
+        for var in Xnames:
+            if var in self.randvars.keys():
+                self.rvidx.append(True)
+                self.rvdist.append(self.randvars[var])
+            else:
+                self.rvidx.append(False)
+        self.rvidx = np.array(self.rvidx)
         self.verbose = verbose
         self.total_fun_eval = 0
 
@@ -63,13 +68,12 @@ class MixedLogit(ChoiceModel):
 
         # Generate draws
         draws = self._generate_draws(N, R, halton)  # (N,Kr,R)
-        n_coeff = K + len(rvpos)
         if init_coeff is None:
-            betas = np.repeat(.1, K + len(rvpos))
+            betas = np.repeat(.1, K + Kr)
         else:
             betas = init_coeff
-            if len(init_coeff) != n_coeff:
-                raise ValueError("The size of init_coeff must be: " + n_coeff)
+            if len(init_coeff) != K + Kr:
+                raise ValueError("The size of init_coeff must be: " + K + Kr)
 
         if dev.using_gpu:
             X, y = dev.to_gpu(X), dev.to_gpu(y)
@@ -86,9 +90,7 @@ class MixedLogit(ChoiceModel):
                      options={'gtol': 1e-4, 'maxiter': maxiter,
                               'disp': verbose > 0})
 
-        fvpos = list(set(range(len(Xnames))) - set(rvpos))
-        coeff_names = np.concatenate((Xnames[fvpos], Xnames[rvpos],
-                                      np.char.add("sd.", Xnames[rvpos])))
+        coeff_names = np.append(Xnames, np.char.add("sd.", Xnames[self.rvidx]))
 
         self._post_fit(optimizat_res, coeff_names, N, verbose)
 
@@ -138,7 +140,7 @@ class MixedLogit(ChoiceModel):
         gr_b = (gr_b*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kr)
         gr_w = (gr_w*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kr)
         # Put all gradients in a single array and aggregate them
-        grad = dev.np.concatenate((gr_f, gr_b, gr_w), axis=1)  # (N,K)
+        grad = self._concat_gradients(gr_f, gr_b, gr_w)  # (N,K)
         if weights is not None:
             grad = grad*weights[:, None]
         grad = grad.sum(axis=0)  # (K,)
@@ -150,6 +152,11 @@ class MixedLogit(ChoiceModel):
             print("Evaluation {}  Log-Lik.={:.2f}".format(self.total_fun_eval,
                                                           -loglik))
         return -loglik, -grad
+
+    def _concat_gradients(self, gr_f, gr_b, gr_w):
+        idx = np.append(np.where(~self.rvidx)[0], np.where(self.rvidx)[0])
+        gr_fb = np.concatenate((gr_f, gr_b), axis=1)[:, idx]
+        return np.concatenate((gr_fb, gr_w), axis=1)
 
     def _prob_product_across_panels(self, pch, panel_info):
         if not np.all(panel_info):  # If panel unbalanced. Not all ones
@@ -208,10 +215,9 @@ class MixedLogit(ChoiceModel):
 
     def _transform_betas(self, betas, draws):
         # Extract coeffiecients from betas array
-        Kr = self.rvidx.sum()   # Number of random coeff
-        Kf = len(betas) - 2*Kr  # Number of fixed coeff
-        betas_fixed = betas[0:Kf]  # First Kf positions
-        br_mean, br_sd = betas[Kf:Kf+Kr], betas[Kf+Kr:]  # Remaining positions
+        betas_fixed = betas[np.where(~self.rvidx)[0]]
+        br_mean = betas[np.where(self.rvidx)[0]]
+        br_sd = betas[len(self.rvidx):]  # Last Kr positions
         # Compute: betas = mean + sd*draws
         betas_random = br_mean[None, :, None] + draws*br_sd[None, :, None]
         betas_random = self._apply_distribution(betas_random, draws)

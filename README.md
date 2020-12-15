@@ -8,7 +8,7 @@ Multinomial and conditional logit models are also supported.
 The following example analyzes choices of fishing modes. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:
 - `X`: Data matrix in long format (numpy array, shape [n_samples, n_variables])
 - `y`: Binary vector of choices (numpy array, shape [n_samples, ])
-- `varnames`: List of variable names. Its length must match number of columns in `X`
+- `varnames`: List of variable names. It must match the number and order of the columns in `X`
 - `alt`:  List of alternatives names or codes.
 - `randvars`: Variables with random distribution. (`"n"` normal, `"ln"` lognormal, `"t"` triangular, `"u"` uniform, `"tn"` truncated normal)
 
@@ -61,7 +61,14 @@ Install using pip:
 Alternatively, you can download source code and import `xlogit.MixedLogit`
 
 ### Enable GPU Processsing
-To enable GPU processing you must install the CuPy library  ([see installation instructions](https://docs.cupy.dev/en/stable/install.html)).  When xlogit detects that CuPy is installed, it switches to GPU processing.
+To enable GPU processing you must install the CuPy library  ([see installation instructions](https://xlogit.readthedocs.io/en/latest/install.html).  When xlogit detects that CuPy is installed, it switches to GPU processing without any additional setup.
+
+## No GPU? No problem
+xlogit also works without a GPU. However, if you need to speed up your model estimation, there are several low cost and even free options to access cloud GPU resources. For instance:
+
+- [Google Colab](https://colab.research.google.com>) offers free GPU resources for learning purposes with no setup required, as the service can be accessed using a web browser. Using xlogit in Google Colab is very easy as it works out of the box without needing to install CUDA or CuPy, which are installed by default. For examples of xlogit running in Google Colab [see this notebook](https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb)
+- The [Google Cloud platform](https://cloud.google.com/compute/gpus-pricing) offers GPU processing starting at $0.45 USD per hour for a NVIDIA Tesla K80 GPU with 4,992 CUDA cores.
+- [Amazon Sagemaker](https://aws.amazon.com/ec2/instance-types/p2/) offers virtual machine instances with the same TESLA K80 GPU at less than $1 USD per hour.
 
 ## Notes:
 The current version allows estimation of:

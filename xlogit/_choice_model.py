@@ -35,21 +35,21 @@ class ChoiceModel(ABC):
         self.loglikelihood = None
 
     @abstractmethod
-    def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
+    def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
             weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
             maxiter=2000, random_state=None):
         pass
 
-    def _as_array(self, X, y, varnames, alt, isvars, id, weights, panel):
+    def _as_array(self, X, y, varnames, alts, isvars, ids, weights, panels):
         X = np.asarray(X)
         y = np.asarray(y)
         varnames = np.asarray(varnames) if varnames is not None else None
-        alt = np.asarray(alt) if alt is not None else None
+        alts = np.asarray(alts) if alts is not None else None
         isvars = np.asarray(isvars) if isvars is not None else None
-        id = np.asarray(id) if id is not None else None
+        ids = np.asarray(ids) if ids is not None else None
         weights = np.asarray(weights) if weights is not None else None
-        panel = np.asarray(panel) if panel is not None else None
-        return X, y, varnames, alt, isvars, id, weights, panel
+        panels = np.asarray(panels) if panels is not None else None
+        return X, y, varnames, alts, isvars, ids, weights, panels
 
     def _pre_fit(self, alt, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
@@ -130,37 +130,38 @@ class ChoiceModel(ABC):
 
         return X, names
 
-    def _check_long_format_consistency(self, id, alt, sorted_idx):
-        alt = alt[sorted_idx]
-        uq_alt = np.unique(alt)
-        expect_alt = np.tile(uq_alt, int(len(id)/len(uq_alt)))
-        if not np.array_equal(alt, expect_alt):
-            raise ValueError('inconsistent alt values in long format')
-        _, obs_by_id = np.unique(id, return_counts=True)
-        if not np.all(obs_by_id/len(uq_alt)):  # Multiple of J
-            raise ValueError('inconsistent alt and id values in long format')
+    def _check_long_format_consistency(self, ids, alts, sorted_idx):
+        alts = alts[sorted_idx]
+        uq_alts = np.unique(alts)
+        expected_alts = np.tile(uq_alts, int(len(ids)/len(uq_alts)))
+        if not np.array_equal(alts, expected_alts):
+            raise ValueError('inconsistent alts values in long format')
+        _, obs_by_id = np.unique(ids, return_counts=True)
+        if not np.all(obs_by_id/len(uq_alts)):  # Multiple of J
+            raise ValueError('inconsistent alts and ids values in long format')
 
-    def _arrange_long_format(self, X, y, id, alt, panel=None):
-        if id is not None:
-            pnl = panel if panel is not None else np.ones(len(id))
-            alt = alt.astype(str)
-            alt = alt if len(alt) == len(id)\
-                else np.tile(alt, int(len(id)/len(alt)))
-            cols = np.zeros(len(id), dtype={'names': ['panel', 'id', 'alt'],
-                                            'formats': ['<f4', '<f4', '<U64']})
-            cols['panel'], cols['id'], cols['alt'] = pnl, id, alt
+    def _arrange_long_format(self, X, y, ids, alts, panels=None):
+        if ids is not None:
+            pnls = panels if panels is not None else np.ones(len(ids))
+            alts = alts.astype(str)
+            alts = alts if len(alts) == len(ids)\
+                else np.tile(alts, int(len(ids)/len(alts)))
+            cols = np.zeros(len(ids),
+                            dtype={'names': ['panel', 'id', 'alt'],
+                                   'formats': ['<f4', '<f4', '<U64']})
+            cols['panel'], cols['id'], cols['alt'] = pnls, ids, alts
             sorted_idx = np.argsort(cols, order=['panel', 'id', 'alt'])
             X, y = X[sorted_idx], y[sorted_idx]
-            if panel is not None:
-                panel = panel[sorted_idx]
-            self._check_long_format_consistency(id, alt, sorted_idx)
-        return X, y, panel
+            if panels is not None:
+                panels = panels[sorted_idx]
+            self._check_long_format_consistency(ids, alts, sorted_idx)
+        return X, y, panels
 
-    def _validate_inputs(self, X, y, alt, varnames, isvars, id, weights, panel,
-                         base_alt, fit_intercept, max_iterations):
+    def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights,
+                         panels, base_alt, fit_intercept, max_iterations):
         if varnames is None:
             raise ValueError('The parameter varnames is required')
-        if alt is None:
+        if alts is None:
             raise ValueError('The parameter alternatives is required')
         if X.ndim != 2:
             raise ValueError("X must be an array of two dimensions in "

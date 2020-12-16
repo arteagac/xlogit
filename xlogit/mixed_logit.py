@@ -19,29 +19,30 @@ class MixedLogit(ChoiceModel):
         self.rvdist = None
 
     # X: (N, J, K)
-    def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
-            weights=None, randvars=None, panel=None, base_alt=None,
+    def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
+            weights=None, randvars=None, panels=None, base_alt=None,
             fit_intercept=False, init_coeff=None, maxiter=2000,
             random_state=None, n_draws=200, halton=True, verbose=1):
 
-        X, y, varnames, alt, isvars, id, weights, panel\
-            = self._as_array(X, y, varnames, alt, isvars, id, weights, panel)
+        X, y, varnames, alts, isvars, ids, weights, panels\
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights,
+                             panels)
 
-        self._validate_inputs(X, y, alt, varnames, isvars, id, weights, panel,
-                              base_alt, fit_intercept, maxiter)
-        self._pre_fit(alt, varnames, isvars, base_alt,
+        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
+                              panels, base_alt, fit_intercept, maxiter)
+        self._pre_fit(alts, varnames, isvars, base_alt,
                       fit_intercept, maxiter)
 
         if random_state is not None:
             np.random.seed(random_state)
 
-        X, y, panel = self._arrange_long_format(X, y, id, alt, panel)
+        X, y, panels = self._arrange_long_format(X, y, ids, alts, panels)
         X, Xnames = self._setup_design_matrix(X)
         J, K, R = X.shape[1], X.shape[2], n_draws
         Kr = len(randvars)
 
-        if panel is not None:  # If panel
-            X, y, panel_info = self._balance_panels(X, y, panel)
+        if panels is not None:  # If panel
+            X, y, panel_info = self._balance_panels(X, y, panels)
             N, P = panel_info.shape
         else:
             N, P = X.shape[0], 1
@@ -176,9 +177,9 @@ class MixedLogit(ChoiceModel):
                     (betas_random[:, k, :] > 0)
         return betas_random
 
-    def _balance_panels(self, X, y, panel):
+    def _balance_panels(self, X, y, panels):
         _, J, K = X.shape
-        _, p_obs = np.unique(panel, return_counts=True)
+        _, p_obs = np.unique(panels, return_counts=True)
         p_obs = (p_obs/J).astype(int)
         N = len(p_obs)  # This is the new N after accounting for panels
         P = np.max(p_obs)  # Panel length for all records
@@ -278,7 +279,7 @@ class MixedLogit(ChoiceModel):
             X = np.array([[2, 1], [1, 3], [3, 1], [2, 4]])
             y = np.array([0, 1, 0, 1])
             model = MixedLogit()
-            model.fit(X, y, varnames=["a", "b"], alt=["1", "2"], n_draws=500,
+            model.fit(X, y, varnames=["a", "b"], alts=["1", "2"], n_draws=500,
                       randvars={'a': 'n', 'b': 'n'}, maxiter=0, verbose=0)
             print("{} GPU device(s) available. xlogit will use "
                   "GPU processing".format(n_gpus))

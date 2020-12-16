@@ -10,7 +10,7 @@ The following example analyzes choices of fishing modes. See the data [here](exa
 - `X`: Data matrix in long format (numpy array, shape [n_samples, n_variables])
 - `y`: Binary vector of choices (numpy array, shape [n_samples, ])
 - `varnames`: List of variable names. It must match the number and order of the columns in `X`
-- `alt`:  List of alternatives names or codes.
+- `alts`:  List of alternatives names or codes.
 - `randvars`: Variables with random distribution. (`"n"` normal, `"ln"` lognormal, `"t"` triangular, `"u"` uniform, `"tn"` truncated normal)
 
 The current version of `xlogit` only supports data in long format.
@@ -29,8 +29,8 @@ from xlogit import MixedLogit
 model = MixedLogit()
 model.fit(X, y,
           varnames=['price', 'catch'],
-          id=df['id'],
-          alt=df['alt'],
+          ids=df['id'],
+          alts=df['alt'],
           randvars={'price': 'n', 'catch': 'n'})
 model.summary()
 ```

@@ -10,17 +10,17 @@ from ._choice_model import ChoiceModel
 class MultinomialLogit(ChoiceModel):
     """Class for estimation of Multinomial and Conditional Logit Models"""
 
-    def fit(self, X, y, varnames=None, alt=None, isvars=None, id=None,
+    def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
             weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
             maxiter=2000, random_state=None, verbose=1):
 
-        X, y, varnames, alt, isvars, id, weights, _\
-            = self._as_array(X, y, varnames, alt, isvars, id, weights, None)
-        self._validate_inputs(X, y, alt, varnames, isvars, id, weights, None,
+        X, y, varnames, alts, isvars, ids, weights, _\
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None)
+        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights, None,
                               base_alt, fit_intercept, maxiter)
 
-        self._pre_fit(alt, varnames, isvars, base_alt, fit_intercept, maxiter)
-        X, y, panel = self._arrange_long_format(X, y, id, alt)
+        self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
+        X, y, _ = self._arrange_long_format(X, y, ids, alts)
 
         if random_state is not None:
             np.random.seed(random_state)

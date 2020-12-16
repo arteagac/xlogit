@@ -272,8 +272,15 @@ class MixedLogit(ChoiceModel):
 
     @staticmethod
     def check_if_gpu_available():
-        X = np.array([[2, 1], [1, 3], [3, 1], [2, 4]])
-        y = np.array([0, 1, 0, 1])
-        model = MixedLogit()
-        model.fit(X, y, varnames=["a", "b"], alt=["1", "2"], n_draws=500,
-                  randvars={'a': 'n', 'b': 'n'}, maxiter=0, verbose=0)
+        n_gpus = dev.get_device_count()
+        if n_gpus > 0:
+            # Test a very simple example to see if CuPy is working
+            X = np.array([[2, 1], [1, 3], [3, 1], [2, 4]])
+            y = np.array([0, 1, 0, 1])
+            model = MixedLogit()
+            model.fit(X, y, varnames=["a", "b"], alt=["1", "2"], n_draws=500,
+                      randvars={'a': 'n', 'b': 'n'}, maxiter=0, verbose=0)
+            print("{} GPU device(s) available. xlogit will use "
+                  "GPU processing".format(n_gpus))
+        else:
+            print("*** No GPU device found. Verify CuPy is properly installed")

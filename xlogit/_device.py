@@ -15,10 +15,11 @@ class Device():
             self.np = cupy
             self._using_gpu = True
 
-    def enable_gpu_acceleration(self):
+    def enable_gpu_acceleration(self, device_id=0):
         if(_gpu_available):
             self.np = cupy
             self._using_gpu = True
+            cupy.cuda.Device(device_id).use()
         else:
             print("CuPy not found. Verify it is properly installed")
 
@@ -35,6 +36,12 @@ class Device():
 
     def to_gpu(self, arr):
         return cupy.asarray(arr)
+
+    def get_device_count(self):
+        if _gpu_available:
+            return cupy.cuda.runtime.getDeviceCount()
+        else:
+            return 0
 
 
 device = Device()

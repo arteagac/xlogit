@@ -1,4 +1,5 @@
 [![Build Status](https://travis-ci.com/arteagac/xlogit.svg?branch=master)](https://travis-ci.com/arteagac/xlogit)
+[![Documentation Status](https://readthedocs.org/projects/xlogit/badge/?version=latest)](https://xlogit.readthedocs.io/en/latest/?badge=latest)
 
 # xlogit
 A Python package for GPU-accelerated estimation of mixed logit models.  

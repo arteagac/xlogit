@@ -7,6 +7,7 @@ import numpy as np
 from scipy.stats import t
 from time import time
 from abc import ABC, abstractmethod
+import warnings
 
 
 class ChoiceModel(ABC):
@@ -182,13 +183,13 @@ class ChoiceModel(ABC):
         Prints in console the coefficients and additional estimation outputs
         """
         if self.coeff_ is None:
-            print("The current model has not been yet estimated")
+            warnings.warn("The current model has not been yet estimated",
+                          UserWarning)
             return
         if not self.convergence:
-            print("-"*50)
-            print("WARNING: Convergence was not reached during estimation. "
-                  "The given estimates may not be reliable")
-            print('*'*50)
+            warnings.warn("WARNING: Convergence was not reached during"
+                          "The given estimates may not be reliable",
+                          UserWarning)
         print("Estimation time= {:.1f} seconds".format(self.estim_time_sec))
         print("-"*75)
         print("{:19} {:>13} {:>13} {:>13} {:>13}"

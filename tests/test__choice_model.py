@@ -50,3 +50,13 @@ def test__validate_inputs():
     with pytest.raises(ValueError):  # y dimensions
         validate(X, [], alts, varnames=None, isvars=None, ids=ids,
                  weights=None, base_alt=None, fit_intercept=True, maxiter=0)
+
+
+def test_summary():
+    """
+    Ensures that calls to summary when the model has not been fit warns the
+    user
+    """
+    model = MultinomialLogit()
+    with pytest.warns(UserWarning):
+        model.summary()

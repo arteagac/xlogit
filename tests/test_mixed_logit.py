@@ -30,8 +30,8 @@ def test__balance_panels():
 
 def test_log_likelihood():
     """
-    Computes the log-likelihood for a simple example and ensures that the one
-    returned by xlogit is the same
+    Computes the log-likelihood "by hand" for a simple example and ensures
+    that the one returned by xlogit is the same
     """
     P = 1  # Without panel data
     betas = np.array([.1, .1, .1, .1])
@@ -53,6 +53,24 @@ def test_log_likelihood():
         (y_*p).sum(axis=2).prod(axis=1).mean(axis=1)))
 
     assert pytest.approx(expected_loglik, obtained_loglik)
+
+
+def test__transform_betas():
+    """
+    Check that betas are properly transformed to random draws
+
+    """
+    betas = np.array([.1, .1, .1, .1])
+
+    # Compute log likelihood using xlogit
+    model = MixedLogit()
+    model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
+    draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
+    expected_betas = betas[None, [0, 1], None] + \
+        draws*betas[None, [2, 3], None]
+    _, obtained_betas = model._transform_betas(betas, draws)
+
+    assert np.allclose(expected_betas, obtained_betas)
 
 
 def test_fit():
@@ -87,3 +105,12 @@ def test_validate_inputs():
     with pytest.raises(ValueError):  # wrong var name
         model.fit(X, y, varnames=varnames, alts=alts, ids=ids, n_draws=10,
                   maxiter=0, verbose=0, halton=True, randvars={'fake': 'n'})
+
+
+def test_gpu_not_available():
+    """
+    Ensures that xlogit detects that GPU is not available based on CuPy's
+    installation status
+
+    """
+    assert not MixedLogit.check_if_gpu_available()

@@ -296,5 +296,7 @@ class MixedLogit(ChoiceModel):
                       randvars={'a': 'n', 'b': 'n'}, maxiter=0, verbose=0)
             print("{} GPU device(s) available. xlogit will use "
                   "GPU processing".format(n_gpus))
+            return True
         else:
             print("*** No GPU device found. Verify CuPy is properly installed")
+            return False

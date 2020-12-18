@@ -21,7 +21,7 @@ class Device():
             self._using_gpu = True
             cupy.cuda.Device(device_id).use()
         else:
-            print("CuPy not found. Verify it is properly installed")
+            print("***CuPy not found. Verify it is properly installed")
 
     def disable_gpu_acceleration(self):
         self.np = numpy

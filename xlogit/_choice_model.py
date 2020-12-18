@@ -25,6 +25,8 @@ class ChoiceModel(ABC):
         self.zvalues = None
         self.pvalues = None
         self.loglikelihood = None
+        self.total_fun_eval = 0
+        self.verbose = 1
 
     def _reset_attributes(self):
         self.coeff_names = None
@@ -33,6 +35,8 @@ class ChoiceModel(ABC):
         self.zvalues = None
         self.pvalues = None
         self.loglikelihood = None
+        self.total_fun_eval = 0
+        self.verbose = 1
 
     @abstractmethod
     def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
@@ -51,16 +55,16 @@ class ChoiceModel(ABC):
         panels = np.asarray(panels) if panels is not None else None
         return X, y, varnames, alts, isvars, ids, weights, panels
 
-    def _pre_fit(self, alt, varnames, isvars, base_alt,
+    def _pre_fit(self, alts, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
         self._reset_attributes()
         self._fit_start_time = time()
-        self.isvars = [] if isvars is None else list(isvars)
-        self.asvars = [v for v in varnames if v not in self.isvars]
-        self.varnames = list(varnames)  # Easier to handle with lists
-        self.fit_intercept = fit_intercept
-        self.alternatives = np.unique(alt)
-        self.base_alt = self.alternatives[0] if base_alt is None else base_alt
+        self._isvars = [] if isvars is None else list(isvars)
+        self._asvars = [v for v in varnames if v not in self._isvars]
+        self._varnames = list(varnames)  # Easier to handle with lists
+        self._fit_intercept = fit_intercept
+        self._alternatives = np.unique(alts)
+        self.base_alt = self._alternatives[0] if base_alt is None else base_alt
         self.maxiter = maxiter
 
     def _post_fit(self, optimization_res, coeff_names, sample_size, verbose=1):
@@ -83,13 +87,13 @@ class ChoiceModel(ABC):
             print("Message: "+optimization_res['message'])
 
     def _setup_design_matrix(self, X):
-        J = len(self.alternatives)
+        J = len(self._alternatives)
         N = int(len(X)/J)
-        isvars = self.isvars.copy()
-        asvars = self.asvars.copy()
-        varnames = self.varnames.copy()
+        isvars = self._isvars.copy()
+        asvars = self._asvars.copy()
+        varnames = self._varnames.copy()
 
-        if self.fit_intercept:
+        if self._fit_intercept:
             isvars.insert(0, '_intercept')
             varnames.insert(0, '_intercept')
             X = np.hstack((np.ones(J*N)[:, None], X))
@@ -104,7 +108,7 @@ class ChoiceModel(ABC):
             dummy = np.tile(np.eye(J), reps=(N, 1))
             # Remove base alternative
             dummy = np.delete(dummy,
-                              np.where(self.alternatives == self.base_alt)[0],
+                              np.where(self._alternatives == self.base_alt)[0],
                               axis=1)
             Xis = X[:, ispos]
             # Multiply dummy representation by the individual specific data
@@ -125,7 +129,7 @@ class ChoiceModel(ABC):
             X = Xis
 
         names = ["{}.{}".format(isvar, j) for isvar in isvars
-                 for j in self.alternatives if j != self.base_alt] + asvars
+                 for j in self._alternatives if j != self.base_alt] + asvars
         names = np.array(names)
 
         return X, names
@@ -158,7 +162,7 @@ class ChoiceModel(ABC):
         return X, y, panels
 
     def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights,
-                         panels, base_alt, fit_intercept, max_iterations):
+                         base_alt, fit_intercept, maxiter):
         if varnames is None:
             raise ValueError('The parameter varnames is required')
         if alts is None:

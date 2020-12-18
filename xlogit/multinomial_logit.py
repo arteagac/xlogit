@@ -16,7 +16,7 @@ class MultinomialLogit(ChoiceModel):
 
         X, y, varnames, alts, isvars, ids, weights, _\
             = self._as_array(X, y, varnames, alts, isvars, ids, weights, None)
-        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights, None,
+        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
                               base_alt, fit_intercept, maxiter)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)

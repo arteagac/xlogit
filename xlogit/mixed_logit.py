@@ -15,8 +15,8 @@ class MixedLogit(ChoiceModel):
     def __init__(self):
         """Init Function"""
         super(MixedLogit, self).__init__()
-        self.rvidx = None  # Boolean index of random vars in X. True = rand var
-        self.rvdist = None
+        self._rvidx = None  # Position k is True if k is random variable
+        self._rvdist = None
 
     # X: (N, J, K)
     def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
@@ -29,7 +29,7 @@ class MixedLogit(ChoiceModel):
                              panels)
 
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
-                              panels, base_alt, fit_intercept, maxiter)
+                              base_alt, fit_intercept, maxiter)
         self._pre_fit(alts, varnames, isvars, base_alt,
                       fit_intercept, maxiter)
 
@@ -38,6 +38,8 @@ class MixedLogit(ChoiceModel):
 
         X, y, panels = self._arrange_long_format(X, y, ids, alts, panels)
         X, Xnames = self._setup_design_matrix(X)
+        self._model_specific_validations(randvars, Xnames)
+
         J, K, R = X.shape[1], X.shape[2], n_draws
         Kr = len(randvars)
 
@@ -53,16 +55,15 @@ class MixedLogit(ChoiceModel):
 
         self.n_draws = n_draws
         self.randvars = randvars
-        self.rvidx, self.rvdist = [], []
+        self._rvidx, self._rvdist = [], []
         for var in Xnames:
             if var in self.randvars.keys():
-                self.rvidx.append(True)
-                self.rvdist.append(self.randvars[var])
+                self._rvidx.append(True)
+                self._rvdist.append(self.randvars[var])
             else:
-                self.rvidx.append(False)
-        self.rvidx = np.array(self.rvidx)
+                self._rvidx.append(False)
+        self._rvidx = np.array(self._rvidx)
         self.verbose = verbose
-        self.total_fun_eval = 0
 
         if weights is not None:
             weights = weights*(N/np.sum(weights))  # Normalize weights
@@ -91,14 +92,15 @@ class MixedLogit(ChoiceModel):
                      options={'gtol': 1e-4, 'maxiter': maxiter,
                               'disp': verbose > 0})
 
-        coeff_names = np.append(Xnames, np.char.add("sd.", Xnames[self.rvidx]))
+        coeff_names = np.append(Xnames,
+                                np.char.add("sd.", Xnames[self._rvidx]))
 
         self._post_fit(optimizat_res, coeff_names, N, verbose)
 
     def _compute_probabilities(self, betas, X, panel_info, draws):
         Bf, Br = self._transform_betas(betas, draws)  # Get fixed and rand coef
-        Xf = X[:, :, :, ~self.rvidx]  # Data for fixed coefficients
-        Xr = X[:, :, :, self.rvidx]   # Data for random coefficients
+        Xf = X[:, :, :, ~self._rvidx]  # Data for fixed coefficients
+        Xr = X[:, :, :, self._rvidx]   # Data for random coefficients
 
         XBf = dev.np.einsum('npjk,k -> npj', Xf, Bf)  # (N,P,J)
         XBr = dev.np.einsum('npjk,nkr -> npjr', Xr, Br)  # (N,P,J,R)
@@ -127,8 +129,8 @@ class MixedLogit(ChoiceModel):
         loglik = loglik.sum()
 
         # Gradient
-        Xf = X[:, :, :, ~self.rvidx]
-        Xr = X[:, :, :, self.rvidx]
+        Xf = X[:, :, :, ~self._rvidx]
+        Xr = X[:, :, :, self._rvidx]
 
         ymp = y - p  # (N,P,J,R)
         # Gradient for fixed and random params
@@ -155,7 +157,7 @@ class MixedLogit(ChoiceModel):
         return -loglik, -grad
 
     def _concat_gradients(self, gr_f, gr_b, gr_w):
-        idx = np.append(np.where(~self.rvidx)[0], np.where(self.rvidx)[0])
+        idx = np.append(np.where(~self._rvidx)[0], np.where(self._rvidx)[0])
         gr_fb = np.concatenate((gr_f, gr_b), axis=1)[:, idx]
         return np.concatenate((gr_fb, gr_w), axis=1)
 
@@ -169,7 +171,7 @@ class MixedLogit(ChoiceModel):
         return pch  # (N,R)
 
     def _apply_distribution(self, betas_random, draws):
-        for k, dist in enumerate(self.rvdist):
+        for k, dist in enumerate(self._rvdist):
             if dist == 'ln':
                 betas_random[:, k, :] = dev.np.exp(betas_random[:, k, :])
             elif dist == 'tn':
@@ -203,11 +205,11 @@ class MixedLogit(ChoiceModel):
         return Xbal, ybal, panel_info
 
     def _compute_derivatives(self, betas, draws):
-        N, R, Kr = draws.shape[0], draws.shape[2], self.rvidx.sum()
+        N, R, Kr = draws.shape[0], draws.shape[2], self._rvidx.sum()
         der = dev.np.ones((N, Kr, R))
-        if any(set(self.rvdist).intersection(['ln', 'tn'])):  # If any ln or tn
+        if any(set(self._rvdist).intersection(['ln', 'tn'])):
             _, betas_random = self._transform_betas(betas, draws)
-            for k, dist in enumerate(self.rvdist):
+            for k, dist in enumerate(self._rvdist):
                 if dist == 'ln':
                     der[:, k, :] = betas_random[:, k, :]
                 elif dist == 'tn':
@@ -216,9 +218,9 @@ class MixedLogit(ChoiceModel):
 
     def _transform_betas(self, betas, draws):
         # Extract coeffiecients from betas array
-        betas_fixed = betas[np.where(~self.rvidx)[0]]
-        br_mean = betas[np.where(self.rvidx)[0]]
-        br_sd = betas[len(self.rvidx):]  # Last Kr positions
+        betas_fixed = betas[np.where(~self._rvidx)[0]]
+        br_mean = betas[np.where(self._rvidx)[0]]
+        br_sd = betas[len(self._rvidx):]  # Last Kr positions
         # Compute: betas = mean + sd*draws
         betas_random = br_mean[None, :, None] + draws*br_sd[None, :, None]
         betas_random = self._apply_distribution(betas_random, draws)
@@ -227,12 +229,12 @@ class MixedLogit(ChoiceModel):
     def _generate_draws(self, sample_size, n_draws, halton=True):
         if halton:
             draws = self._get_halton_draws(sample_size, n_draws,
-                                           len(self.rvdist))
+                                           len(self._rvdist))
         else:
             draws = self._get_random_draws(sample_size, n_draws,
-                                           len(self.rvdist))
+                                           len(self._rvdist))
 
-        for k, dist in enumerate(self.rvdist):
+        for k, dist in enumerate(self._rvdist):
             if dist in ['n', 'ln', 'tn']:  # Normal based
                 draws[:, k, :] = scipy.stats.norm.ppf(draws[:, k, :])
             elif dist == 't':  # Triangular
@@ -269,7 +271,18 @@ class MixedLogit(ChoiceModel):
                             shuffled=shuffled).reshape(sample_size, n_draws)
                  for i in range(n_vars)]
         draws = np.stack(draws, axis=1)
-        return draws
+        return draws  # (N,Kr,R)
+
+    def _model_specific_validations(self, randvars, Xnames):
+        if randvars is None:
+            raise ValueError("The randvars parameter is required for Mixed "
+                             "Logit estimation")
+        if not set(randvars.keys()).issubset(Xnames):
+            raise ValueError("Some variable names in randvars were not found "
+                             "in the list of variable names")
+        if not set(randvars.values()).issubset(["n", "ln", "t", "tn", "u"]):
+            raise ValueError("Wrong mixing distribution found in randvars. "
+                             "Accepted distrubtions are n, ln, t, u, tn")
 
     @staticmethod
     def check_if_gpu_available():

@@ -1,10 +1,9 @@
+# xlogit: A Python package for GPU-accelerated estimation of mixed logit models.
+
 [![Build Status](https://travis-ci.com/arteagac/xlogit.svg?branch=master)](https://travis-ci.com/arteagac/xlogit)
 [![Documentation Status](https://readthedocs.org/projects/xlogit/badge/?version=latest)](https://xlogit.readthedocs.io/en/latest/?badge=latest)
 [![Coverage Status](https://coveralls.io/repos/github/arteagac/xlogit/badge.svg?branch=master)](https://coveralls.io/github/arteagac/xlogit?branch=master)
 
-# xlogit
-A Python package for GPU-accelerated estimation of mixed logit models.  
-Multinomial and conditional logit models are also supported.
 
 ### Example:
 The following example analyzes choices of fishing modes. See the data [here](examples/data/fishing_long.csv) and more information about the data [here](https://doi.org/10.1162/003465399767923827). The parameters are:

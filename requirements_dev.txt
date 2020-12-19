@@ -1,0 +1,7 @@
+pytest-cov>=2.5.1
+pytest>=3.0.7
+flake8>=3.5.0
+coveralls
+nbsphinx>=0.3.3
+sphinx-rtd-theme>=0.4.2
+ipython

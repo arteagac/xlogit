@@ -1,6 +1,7 @@
 ==========================================================
 xlogit -- GPU-accelerated estimation of mixed logit models
 ==========================================================
+
 .. toctree::
    :maxdepth: 2
 
@@ -9,6 +10,14 @@ xlogit -- GPU-accelerated estimation of mixed logit models
 
 
 .. toctree::
-   :maxdepth: 2
-   :caption: Examples:
+   :maxdepth: 1
+   :caption: API Reference
 
+   api/index
+
+
+.. toctree::
+   :maxdepth: 1
+   :caption: Examples
+
+   examples

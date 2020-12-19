@@ -1,6 +1,4 @@
-"""
-Implements all the logic for mixed logit models
-"""
+"""Implements all the logic for mixed logit models."""
 # pylint: disable=invalid-name
 import scipy.stats
 from scipy.optimize import minimize
@@ -10,10 +8,10 @@ import numpy as np
 
 
 class MixedLogit(ChoiceModel):
-    """Class for estimation of Mixed Logit Models"""
+    """Class for estimation of Mixed Logit Models."""
 
     def __init__(self):
-        """Init Function"""
+        """Init Function."""
         super(MixedLogit, self).__init__()
         self._rvidx = None  # Position k is True if k is random variable
         self._rvdist = None
@@ -286,6 +284,14 @@ class MixedLogit(ChoiceModel):
 
     @staticmethod
     def check_if_gpu_available():
+        """Check if GPU processing is available by running a quick estimation.
+
+        Returns
+        -------
+        bool
+            True if GPU processing is available, False otherwise.
+
+        """
         n_gpus = dev.get_device_count()
         if n_gpus > 0:
             # Test a very simple example to see if CuPy is working

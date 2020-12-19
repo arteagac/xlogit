@@ -1,6 +1,4 @@
-"""
-Implements multinomial and conditional logit models
-"""
+"""Implements all the logic for multinomial and conditional logit models."""
 # pylint: disable=line-too-long,invalid-name
 
 import numpy as np
@@ -8,7 +6,7 @@ from ._choice_model import ChoiceModel
 
 
 class MultinomialLogit(ChoiceModel):
-    """Class for estimation of Multinomial and Conditional Logit Models"""
+    """Class for estimation of Multinomial and Conditional Logit Models."""
 
     def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
             weights=None, base_alt=None, fit_intercept=False, init_coeff=None,

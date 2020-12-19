@@ -44,11 +44,11 @@ def test__validate_inputs():
                  weights=None, base_alt=None, fit_intercept=True, maxiter=0)
 
     with pytest.raises(ValueError):  # X dimensions
-        validate([], y, alts, varnames=None, isvars=None, ids=ids,
+        validate(np.array([]), y, alts, varnames=None, isvars=None, ids=ids,
                  weights=None, base_alt=None, fit_intercept=True, maxiter=0)
 
     with pytest.raises(ValueError):  # y dimensions
-        validate(X, [], alts, varnames=None, isvars=None, ids=ids,
+        validate(X, np.array([]), alts, varnames=None, isvars=None, ids=ids,
                  weights=None, base_alt=None, fit_intercept=True, maxiter=0)
 
 

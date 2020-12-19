@@ -12,6 +12,7 @@
 #
 import os
 import sys
+sys.path.insert(0, os.path.abspath('xlogit/xlogit'))
 sys.path.insert(0, os.path.abspath('../../../xlogit'))
 
 # -- Project information -----------------------------------------------------

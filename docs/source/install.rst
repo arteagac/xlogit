@@ -12,9 +12,14 @@ Enable GPU Processing
 By default, xlogit runs on the CPU. To enable GPU processing, it is necessary to additionally install the `CuPy <https://github.com/cupy/cupy>`_ Python package. When xlogit detects that CuPy is properly installed, it automatically switches to GPU processing without requiring any additional setup. To install CuPy you need:
 
 1. Download and install the `NVIDIA CUDA Toolkit <https://developer.nvidia.com/cuda-toolkit-archive>`_.
-2. Install the CuPy version that matches the installed CUDA Toolkit as described `in CuPy's docs <https://docs.cupy.dev/en/stable/install.html#installing-cupy>`_. For instance, if you installed the `CUDA Toolkit v11.0 <https://developer.nvidia.com/cuda-11.0-download-archive>`_ then you need to install the corresponding CuPy's version as follows::
+2. Install the CuPy version that matches the installed CUDA Toolkit as described `in CuPy's docs <https://docs.cupy.dev/en/stable/install.html#installing-cupy>`_. 
 
+.. hint::
+
+   For instance, if you installed the `CUDA Toolkit v11.0 <https://developer.nvidia.com/cuda-11.0-download-archive>`_ , then you need to install the corresponding CuPy's version as follows::
+    
     pip install cupy-cuda110
+
 
 For additional details and troubleshooting of CuPy's installation see: https://docs.cupy.dev/en/stable/install.html
 

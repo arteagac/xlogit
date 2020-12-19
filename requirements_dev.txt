@@ -6,3 +6,5 @@ sphinx
 nbsphinx>=0.3.3
 sphinx-rtd-theme>=0.4.2
 ipython
+numpy>=1.13.1
+scipy>=1.0.0

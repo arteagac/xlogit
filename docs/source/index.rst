@@ -1,20 +1,13 @@
-==========================================================
-xlogit -- GPU-accelerated estimation of mixed logit models
-==========================================================
+.. include:: ../../README.rst
+
 
 .. toctree::
+   :caption: Getting Started
    :maxdepth: 2
 
-   overview
    install
-
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Examples
-
    examples
-   
+
 
 .. toctree::
    :maxdepth: 1

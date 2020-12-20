@@ -63,7 +63,8 @@ For more examples of ``xlogit`` see `this Jupyter Notebook in Google Colab <http
 
 Quick install
 =============
-Install ``xlogit`` using ``pip`` as follows::
+Install ``xlogit`` using ``pip`` as follows:
+
 .. code-block:: bash
 
    pip install xlogit

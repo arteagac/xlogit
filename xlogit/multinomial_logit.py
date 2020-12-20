@@ -4,13 +4,110 @@
 import numpy as np
 from ._choice_model import ChoiceModel
 
+"""
+Notations
+---------
+    N : Number of choice situations
+    J : Number of alternatives
+    K : Number of variables
+"""
+
 
 class MultinomialLogit(ChoiceModel):
-    """Class for estimation of Multinomial and Conditional Logit Models."""
+    """Class for estimation of Multinomial and Conditional Logit Models.
+
+    Attributes
+    ----------
+        coeff_ : numpy array, shape (n_variables)
+            Estimated coefficients
+
+        coeff_names : numpy array, shape (n_variables)
+            Names of the estimated coefficients
+
+        stderr : numpy array, shape (n_variables)
+            Standard errors of the estimated coefficients
+
+        zvalues : numpy array, shape (n_variables)
+            Z-values for t-distribution of the estimated coefficients
+
+        pvalues : numpy array, shape (n_variables)
+            P-values of the estimated coefficients
+
+        loglikelihood : float
+            Log-likelihood at the end of the estimation
+
+        convergence : bool
+            Whether convergence was reached during estimation
+
+        total_iter : int
+            Total number of iterations executed during estimation
+
+        estim_time_sec : float
+            Estimation time in seconds
+
+        sample_size : int
+            Number of samples used for estimation
+
+        aic : float
+            Akaike information criteria of the estimated model
+
+        bic : float
+            Bayesian information criteria of the estimated model
+    """
 
     def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
             weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
             maxiter=2000, random_state=None, verbose=1):
+        """Fit multinomial and/or conditional logit models.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples, n_variables)
+            Input data for explanatory variables in long format
+
+        y : array-like, shape (n_samples,)
+            Choices in long format
+
+        varnames : list, shape (n_variables,)
+            Names of explanatory variables that must match the number and
+            order of columns in ``X``
+
+        alts : array-like, shape (n_samples,)
+            Alternative indexes in long format or list of alternative names
+
+        isvars : list
+            Names of individual-specific variables in ``varnames``
+
+        ids : array-like, shape (n_samples,)
+            Identifiers for choice situations in long format.
+
+        weights : array-like, shape (n_variables,), default=None
+            Weights for the choice situations in long format.
+
+        base_alt : int, float or str, default=None
+            Base alternative
+
+        fit_intercept : bool, default=False
+            Whether to include an intercept in the model.
+
+        init_coeff : numpy array, shape (n_variables,), default=None
+            Initial coefficients for estimation.
+
+        maxiter : int, default=200
+            Maximum number of iterations
+
+        random_state : int, default=None
+            Random seed for numpy random generator
+
+        verbose : int, default=1
+            Verbosity of messages to show during estimation. 0: No messages,
+            1: Some messages, 2: All messages
+
+
+        Returns
+        -------
+        None.
+        """
 
         X, y, varnames, alts, isvars, ids, weights, _\
             = self._as_array(X, y, varnames, alts, isvars, ids, weights, None)
@@ -39,12 +136,17 @@ class MultinomialLogit(ChoiceModel):
         self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
 
     def _compute_probabilities(self, betas, X):
+        """Compute classic logit-based probabilities"""
         XB = X.dot(betas)
         eXB = np.exp(XB)
         p = eXB/np.sum(eXB, axis=1, keepdims=True)  # (N,J)
         return p
 
     def _loglik_and_gradient(self, betas, X, y, weights):
+        """
+        Computes log-likelihood, gradient, and hessian required by the
+        optimization routine
+        """
         p = self._compute_probabilities(betas, X)
         # Log likelihood
         lik = np.sum(y*p, axis=1)
@@ -62,7 +164,11 @@ class MultinomialLogit(ChoiceModel):
         grad = np.sum(grad, axis=0)
         return -loglik, -grad, Hinv
 
+    def summary(self):
+        super(MultinomialLogit, self).summary()
+
     def _bfgs_optimization(self, betas, X, y, weights, maxiter):
+        """BFGS optimization routine"""
         res, g, Hinv = self._loglik_and_gradient(betas, X, y, weights)
         current_iteration = 0
         convergence = False

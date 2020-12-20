@@ -9,17 +9,20 @@ from time import time
 from abc import ABC, abstractmethod
 import warnings
 
+"""
+Notations
+---------
+    N : Number of choice situations
+    P : Number of observations per panel
+    J : Number of alternatives
+    K : Number of variables (Kf: fixed, Kr: random)
+"""
+
 
 class ChoiceModel(ABC):
     """Base class for estimation of discrete choice models"""
 
     def __init__(self):
-        """Init Function
-
-        Parameters
-        ----------
-        random_state: an integer used as seed to generate numpy random numbers
-        """
         self.coeff_names = None
         self.coeff_ = None
         self.stderr = None
@@ -88,6 +91,10 @@ class ChoiceModel(ABC):
             print("Message: "+optimization_res['message'])
 
     def _setup_design_matrix(self, X):
+        """Setup the design matrix by adding the intercept when necessary and
+        converting the isvars to a dummy representation that removes the base
+        alternative.
+        """
         J = len(self._alternatives)
         N = int(len(X)/J)
         isvars = self._isvars.copy()
@@ -136,6 +143,10 @@ class ChoiceModel(ABC):
         return X, names
 
     def _check_long_format_consistency(self, ids, alts, sorted_idx):
+        """
+        Ensure that data in long format is consistent. It raises an
+        error if the array of alternative indexes is incomplete
+        """
         alts = alts[sorted_idx]
         uq_alts = np.unique(alts)
         expected_alts = np.tile(uq_alts, int(len(ids)/len(uq_alts)))
@@ -146,6 +157,10 @@ class ChoiceModel(ABC):
             raise ValueError('inconsistent alts and ids values in long format')
 
     def _arrange_long_format(self, X, y, ids, alts, panels=None):
+        """
+        Sort the input data to make sure that data can be safely reshaped
+        later to do everything in terms of matrix products.
+        """
         if ids is not None:
             pnls = panels if panels is not None else np.ones(len(ids))
             alts = alts.astype(str)
@@ -164,6 +179,9 @@ class ChoiceModel(ABC):
 
     def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights,
                          base_alt, fit_intercept, maxiter):
+        """
+        Validates potential mistakes in the input data.
+        """
         if varnames is None:
             raise ValueError('The parameter varnames is required')
         if alts is None:
@@ -179,9 +197,8 @@ class ChoiceModel(ABC):
                              "of columns in X")
 
     def summary(self):
-        """
-        Prints in console the coefficients and additional estimation outputs
-        """
+        """Show estimation results in console."""
+
         if self.coeff_ is None:
             warnings.warn("The current model has not been yet estimated",
                           UserWarning)

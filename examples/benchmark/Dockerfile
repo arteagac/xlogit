@@ -23,14 +23,16 @@ RUN wget https://repo.anaconda.com/miniconda/Miniconda3-py37_4.9.2-Linux-x86_64.
 
 RUN ln -s ~/conda/bin/conda /usr/bin/conda
 RUN conda init bash && . ~/.bashrc \
-    && pip install -U setuptools pip && pip install numpy \
-    && pip install -r requirements_python.txt # && conda install cudatoolkit==11.0.221
+    && pip install -U setuptools pip && pip install -r requirements_python.txt \
+    && pip install xlogit==0.1.0 \
+    && pip install pylogit==0.2.2 && pip install biogeme==3.2.6 && pip install cupy-cuda110==8.2.0
+    
 
-COPY . xlogit
-WORKDIR xlogit/examples/benchmark
+RUN wget https://github.com/arteagac/xlogit/archive/v0.1.0.zip && unzip v0.1.0.zip
+WORKDIR xlogit-0.1.0/examples/benchmark
 
 RUN printf '#!/bin/bash --login\nset -e\nconda activate base\n$@' >> entry.sh && chmod 777 entry.sh
 
 ENTRYPOINT ["./entry.sh"]
-CMD ["python", "benchmark.py", "mini"]
+CMD ["python", "benchmark.py"]
 

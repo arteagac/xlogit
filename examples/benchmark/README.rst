@@ -85,6 +85,8 @@ Step 1.4 Install Python packages for benchmark
 In this step, ``xlogit``, ``pylogit``, and ``biogeme`` are installed. In your command line (or Anaconda Prompt in windows) navigate to the location of the provided ``benchmark`` folder using the ``cd`` (change directory) command (e.g. ``cd C:\User\Downloads\xlogit-benchmark\benchmark``) and then install the Python requirements using the following command::
 
     pip install -r requirements_python.txt
+    pip install pylogit==0.2.2
+    pip install biogeme==3.2.6
 
 The ``biogeme`` Python package sometimes has issues during the initialization so reinstalling it helps avoiding future issues. To reinstall it, use the following commands::
 

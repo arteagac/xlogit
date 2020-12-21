@@ -6,7 +6,7 @@ to make sure all the requirments are satisfied.
 import os
 from tools import init_profiler_output_files, log
 import sys
-sys.path.append("../../")  # Path of xlogit library root folder.
+# sys.path.append("../../")  # Path of xlogit library root folder.
 from xlogit import MixedLogit
 
 MixedLogit.check_if_gpu_available()

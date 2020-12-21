@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 from tools import Profiler, curr_ram, log
 import sys
-sys.path.append("../../")  # Path of xlogit library root folder.
+# sys.path.append("../../")  # Path of xlogit library root folder.
 from xlogit import MixedLogit
 from xlogit import device
 

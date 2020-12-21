@@ -14,3 +14,4 @@
    :caption: API Reference
 
    api/index
+   benchmark

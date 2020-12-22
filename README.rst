@@ -98,7 +98,20 @@ The current version allows estimation of:
 - `Conditional logit <https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html>`_ models
 - Weighed regression for all of the logit-based models
 
+Citing ``xlogit``
+=================
+Please cite xlogit as follows:
 
+Arteaga, C., Park, J., Bhat, P., & Paz, A. (2021). xlogit: A Python package for GPU-accelerated estimation of mixed logit models. https://github.com/arteagac/xlogit
+    
+Or using BibTex as follows::
+
+    @misc{xlogit,
+        author = {Arteaga, Cristian and Park, JeeWoong and Bhat, Prithvi and Paz, Alexander},
+        title = {{xlogit: A Python package for GPU-accelerated estimation of mixed logit models.}},
+        url = {https://github.com/arteagac/xlogit},
+        year = {2021}
+    }
 
 
 .. |Travis| image:: https://travis-ci.com/arteagac/xlogit.svg?branch=master

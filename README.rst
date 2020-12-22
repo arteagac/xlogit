@@ -100,9 +100,9 @@ The current version allows estimation of:
 
 Citing ``xlogit``
 =================
-Please cite xlogit as follows:
+Please cite ``xlogit`` as follows:
 
-Arteaga, C., Park, J., Bhat, P., & Paz, A. (2021). xlogit: A Python package for GPU-accelerated estimation of mixed logit models. https://github.com/arteagac/xlogit
+    Arteaga, C., Park, J., Bhat, P., & Paz, A. (2021). xlogit: A Python package for GPU-accelerated estimation of mixed logit models. https://github.com/arteagac/xlogit
     
 Or using BibTex as follows::
 

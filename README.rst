@@ -85,6 +85,15 @@ No GPU? No problem
 - The `Google Cloud platform <https://cloud.google.com/compute/gpus-pricing>`_ offers GPU processing starting at $0.45 USD per hour for a NVIDIA Tesla K80 GPU with 4,992 CUDA cores.
 - `Amazon Sagemaker <https://aws.amazon.com/ec2/instance-types/p2/>`_ offers virtual machine instances with the same TESLA K80 GPU at less than $1 USD per hour.
 
+Benchmark
+=========
+``xlogit`` is significantly faster than existing estimation packages (see the plots below). All the material to run the and replicate the benchmark can be found in the ``examples/benchmark`` folder.
+
+.. image:: examples/benchmark/results/time_benchmark_artificial.png
+  :width: 300
+
+.. image:: examples/benchmark/results/time_benchmark_apollo_biogeme.png
+  :width: 300
 
 Notes
 =====

@@ -107,14 +107,14 @@ def plot_time_benchmark_apollo_biogeme(df):
 
 
 plot_time_benchmark_apollo_biogeme(dfab)
-
 # ==========================================
 # comparison table
 # ==========================================
-# Keep only data for 64 cores
+# Keep only data for max multi-cores
+maxc = 64 if not mini else 4
 dfc = dfab.copy()
-dfc = dfc.drop(dfc[(dfc.library == "apollo") & (dfc.cores != 64)].index)
-dfc = dfc.drop(dfc[(dfc.library == "biogeme") & (dfc.cores != 64)].index)
+dfc = dfc.drop(dfc[(dfc.library == "apollo") & (dfc.cores != maxc)].index)
+dfc = dfc.drop(dfc[(dfc.library == "biogeme") & (dfc.cores != maxc)].index)
 dfc = dfc.drop(['cores', 'loglik'], axis=1)  # Keep only time
 # Reshape to have time as columns
 dfc = dfc.pivot(index='library', columns='draws', values='time')
@@ -131,10 +131,18 @@ log("\n\n********* TABLE COMPARISON ESTIMATION TIME *********")
 log("{:12} {:^28} {:^37}".format("", "Estimation time",
                                  "Compared to xlogit_gpu"))
 c = dfc.columns.values
-log("{:12} {:6} {:6} {:6} {:6} {:>6} {:>6} {:>6} {:>6} {:>6}".format(
-    "library", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], "c_avg"))
+if mini:
+    log("{:12} {:6} {:6} {:6} {:>6} {:>6} {:>6} {:>6} ".format(
+        "library", c[0], c[1], c[2], c[3], c[4], c[5], "c_avg"))
+else:
+    log("{:12} {:6} {:6} {:6} {:6} {:>6} {:>6} {:>6} {:>6} {:>6}".format(
+        "library", c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], "c_avg"))
 
 for row in dfc.iterrows():
     c = row[1].values
-    log("{:12} {:6} {:6} {:6} {:6} {:6} {:6} {:6} {:6} {:6}".format(
-        row[0], c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]))
+    if mini:
+        log("{:12} {:6} {:6} {:6} {:6} {:6} {:6} {:6}".format(
+            row[0], c[0], c[1], c[2], c[3], c[4], c[5], c[6]))
+    else:
+        log("{:12} {:6} {:6} {:6} {:6} {:6} {:6} {:6} {:6} {:6}".format(
+            row[0], c[0], c[1], c[2], c[3], c[4], c[5], c[6], c[7], c[8]))

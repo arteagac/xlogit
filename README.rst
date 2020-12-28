@@ -87,12 +87,12 @@ No GPU? No problem
 
 Benchmark
 =========
-``xlogit`` is significantly faster than existing estimation packages (see the plots below). All the material to run the and replicate the benchmark can be found in the ``examples/benchmark`` folder.
+As shown in the plots below, ``xlogit`` is significantly faster than existing estimation packages. Also, ``xlogit`` provides convenient scaling when the number of random draws increases. These results were obtained using a modest and low-cost NVIDIA GTX 1060 graphics card. More sophisticated graphics cards are expected to provide even faster estimation times. For additional details about this benchmark and for replication instructions check https://xlogit.readthedocs.io/en/latest/benchmark.html.
 
-.. image:: examples/benchmark/results/time_benchmark_artificial.png
+.. image:: https://raw.githubusercontent.com/arteagac/xlogit/master/examples/benchmark/results/time_benchmark_artificial.png
   :width: 300
 
-.. image:: examples/benchmark/results/time_benchmark_apollo_biogeme.png
+.. image:: https://raw.githubusercontent.com/arteagac/xlogit/master/examples/benchmark/results/time_benchmark_apollo_biogeme.png
   :width: 300
 
 Notes

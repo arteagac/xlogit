@@ -3,9 +3,14 @@ Benchmark
 =========
 
 
+
 Option 1: Quick benchmark in Google Colab
 =========================================
-This is the easiest way to execute the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme) as Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click `this link <https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb>`__ to open the source code in Google Colab and then select ``Runtime > Run all`` to run all the cells. This benchmark should not take longer than one hour of execution. The source code of this benchmark can be found in the provided "benchmark" folder or in the "examples/benchmark" folder in the `Github repository <https://github.com/arteagac/xlogit>`__.
+This is the easiest way to execute the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme) because Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the cells.
+
+https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb
+
+This benchmark should not take longer than one hour of execution. The source code of this benchmark can be found in the provided "benchmark" folder or in the "examples/benchmark" folder in the `Github repository <https://github.com/arteagac/xlogit>`__.
 
 
 Option 2: Mini benchmark
@@ -16,18 +21,18 @@ This is a minimal version of the full benchmark that can be executed in less tha
 ----------------
 * A `CUDA-enabled <https://www.nvidia.com/en-us/geforce/technologies/cuda/supported-gpus/>`__ NVIDIA Graphics Card 
 * Windows 10 or Linux Operating System
-* Processor at least with 6 Cores (for apollo and biogeme)
+* Processor at least with 4 Cores (for apollo and biogeme)
 
 .. hint::
-   **Docker image available:**. If you have a Linux machine, the easiest way to run the mini (and full) benchmark is using the Docker image ``"xlogit-benchmark"`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run::
+   **(Optional) Docker image available:** If you have a Linux machine, the easiest way to run the mini (and full) benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run::
 
-    docker run --gpus all xlogit-benchmark mini
+    docker run --gpus all arteagac/xlogit:benchmark
 
-   After running the benchmkark, the results are saved in the ``benchmark/results`` folder inside the docker container, which can be extracted using::
+   After running the benchmkark, the results (including the plots) are saved in the ``xlogit/examples/benchmark/results`` folder, which can be extracted using::
 
-    docker cp <container_name>:benchmark/results .   
+    docker cp <container_id>:xlogit/examples/benchmark/results .
 
-   To identify your container name, you need to run ``docker ps -a``. The ``Dockerfile`` used to create the ``xlogit-benchmark`` image can be found in the provided ``benchmark`` folder.
+   To identify your container id, you need to run ``docker ps -a``. The ``Dockerfile`` used to create the ``xlogit-benchmark`` image can be found in the provided ``benchmark`` folder.
 
 2.2 Installation steps
 ----------------------
@@ -77,6 +82,8 @@ CuPy is required to use GPU processing in ``xlogit``. Follow these steps to inst
 
     pip install cupy-cuda110
 
+   After this, you need to close your command line (or Anaconda Prompt in windows) and open it again so the changes take effect. Remember that after reopeing the command line you need to run again ``conda activate benchmark``.
+
 5. Verify that CuPy was properly installed by running the following command, which must run without showing any errors::
 
     python -c "import cupy"
@@ -105,7 +112,7 @@ Step 2.1 Install R v4.0
 """""""""""""""""""""""
 You must use R version 4.0.3 (and not 3.6) for the benchmark as the installation of dependencies is easier with this version. 
 
-* For Windows: Download R v4.0 from  https://cran.r-project.org/bin/windows/base/R-4.0.3-win.exe and follow the installation prompts. Make sure that R is available from the Anaconda Prompt by executing ``Rscript --version``. If this command does not run properly, you may need to add R's installation folder to the Path envinronment variable as shown in the image in `this link <https://arteagac.github.io/images/other/add_environment_variable_win10.png>`__.
+* For Windows: Download R v4.0 from  https://cran.r-project.org/bin/windows/base/R-4.0.3-win.exe and follow the installation prompts. Make sure that R is available from the Anaconda Prompt by executing ``Rscript --version``. If this command does not run properly, you may need to add R's installation folder to the Path envinronment variable as shown in the image in `this link <https://arteagac.github.io/images/other/add_environment_variable_win10.png>`__. After this, you need to close your command line (or Anaconda Prompt in windows) and open it again so the changes take effect. Remeber that after reopeing the command line you need to run again ``conda activate benchmark``.
 
 * For Linux: Depending on your distrubution, different instructions for installation of R 4.0.3 are available at https://docs.rstudio.com/resources/install-r/. Just make sure you select v4.0.3, instead of 3.6, which is the default suggested by the instructions. 
 
@@ -139,7 +146,7 @@ Finally, run the benchmark using the following command::
 
     python benchmark.py mini
 
-The results of the benchmark are saved in the ``benchmark/results/`` folder.
+**The results of the benchmark (including the plots) are saved in the ``benchmark/results/`` folder.** The file ``benchmark_results.out`` contains all the messages generated during the execution.
 
 Option 3: Full benchmark
 ========================
@@ -152,15 +159,15 @@ This is the full version of the benchmark, which should take from 12 to 24 hours
 * Processor with at least with **64 Cores** (for apollo and biogeme)
 
 .. hint::
-   **Docker image available:**. If you have a Linux machine, the easiest way to run the mini (and full) benchmark is using the Docker image ``"xlogit-benchmark"`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run::
+   **(Optional) Docker image available:** Similar to the mini benchmark, if you have a Linux machine, the easiest way to run the full benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run the following command (note that this command is different to the one for the mini benchmark)::
 
-    docker run --gpus all xlogit-benchmark
+    docker run --gpus all arteagac/xlogit:benchmark python -u benchmark.py
 
-   After running the benchmkark, the results are saved in the ``benchmark/results`` folder inside the docker container, which can be extracted using::
+   After running the benchmkark, the results (including the plots) are saved in the ``xlogit/examples/benchmark/results`` folder inside the docker container, which can be extracted using::
 
-    docker cp <container_name>:benchmark/results .   
+    docker cp <container_id>:xlogit/examples/benchmark/results .
 
-   To identify your container name, you need to run ``docker ps -a``. The ``Dockerfile`` used to create the ``xlogit-benchmark`` image can be found in the provided ``benchmark`` folder.
+   To identify your container id, you need to run ``docker ps -a``. The ``Dockerfile`` used to create the ``xlogit-benchmark`` image can be found in the provided ``benchmark`` folder.
 
 3.2 Installation steps
 ----------------------
@@ -168,4 +175,4 @@ Follow the same steps as in the mini-benchmark (section 2.2) to install the  all
 
     python benchmark.py
 
-The results of the benchmark are saved in the ``benchmark/results/`` folder.
+**The results of the benchmark (including the plots) are saved in the ``benchmark/results/`` folder.** The file ``benchmark_results.out`` contains all the messages generated during the execution.

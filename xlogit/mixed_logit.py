@@ -20,7 +20,6 @@ Notations
 class MixedLogit(ChoiceModel):
     """Class for estimation of Mixed Logit Models.
 
-
     Attributes
     ----------
         coeff_ : numpy array, shape (n_variables + n_randvars, )
@@ -67,8 +66,8 @@ class MixedLogit(ChoiceModel):
         self._rvdist = None  # List of mixing distributions of rand vars
 
     def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
-            weights=None, randvars=None, panels=None, base_alt=None,
-            fit_intercept=False, init_coeff=None, maxiter=2000,
+            weights=None, avail=None, randvars=None, panels=None,
+            base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000,
             random_state=None, n_draws=200, halton=True, verbose=1):
         """Fit Mixed Logit models.
 
@@ -78,7 +77,7 @@ class MixedLogit(ChoiceModel):
             Input data for explanatory variables in long format
 
         y : array-like, shape (n_samples,)
-            Choices in long format
+            Choices (outcome) in long format
 
         varnames : list, shape (n_variables,)
             Names of explanatory variables that must match the number and
@@ -95,6 +94,10 @@ class MixedLogit(ChoiceModel):
 
         weights : array-like, shape (n_variables,), default=None
             Weights for the choice situations in long format.
+
+        avail: array-like, shape (n_samples,)
+            Availability of alternatives for the choice situations. One when
+            available or zero otherwise.
 
         randvars : dict
             Names (keys) and mixing distributions (values) of variables that
@@ -138,9 +141,9 @@ class MixedLogit(ChoiceModel):
         None.
         """
         # Handle array-like inputs by converting everything to numpy arrays
-        X, y, varnames, alts, isvars, ids, weights, panels\
+        X, y, varnames, alts, isvars, ids, weights, panels, avail\
             = self._as_array(X, y, varnames, alts, isvars, ids, weights,
-                             panels)
+                             panels, avail)
 
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
                               base_alt, fit_intercept, maxiter)
@@ -183,6 +186,9 @@ class MixedLogit(ChoiceModel):
         if weights is not None:
             weights = weights*(N/np.sum(weights))  # Normalize weights
 
+        if avail is not None:
+            avail = avail.reshape(N, J)
+
         # Generate draws
         draws = self._generate_draws(N, R, halton)  # (N,Kr,R)
         if init_coeff is None:
@@ -199,12 +205,14 @@ class MixedLogit(ChoiceModel):
             draws = dev.to_gpu(draws)
             if weights is not None:
                 weights = dev.to_gpu(weights)
+            if avail is not None:
+                avail = dev.to_gpu(avail)
             if verbose > 0:
                 print("Estimation with GPU processing enabled.")
 
         optimizat_res = \
             minimize(self._loglik_gradient, betas, jac=True, method='BFGS',
-                     args=(X, y, panel_info, draws, weights), tol=1e-5,
+                     args=(X, y, panel_info, draws, weights, avail), tol=1e-5,
                      options={'gtol': 1e-4, 'maxiter': maxiter,
                               'disp': verbose > 0})
 
@@ -213,10 +221,10 @@ class MixedLogit(ChoiceModel):
 
         self._post_fit(optimizat_res, coeff_names, N, verbose)
 
-    def _compute_probabilities(self, betas, X, panel_info, draws):
-        """
-        Compute the standard logit-based probabilities. The random and
-        fixed coefficients are handled separately.
+    def _compute_probabilities(self, betas, X, panel_info, draws, avail):
+        """Compute the standard logit-based probabilities.
+
+        Random and fixed coefficients are handled separately.
         """
         Bf, Br = self._transform_betas(betas, draws)  # Get fixed and rand coef
         Xf = X[:, :, :, ~self._rvidx]  # Data for fixed coefficients
@@ -227,22 +235,25 @@ class MixedLogit(ChoiceModel):
         V = XBf[:, :, :, None] + XBr  # (N,P,J,R)
         V[V > 700] = 700
         eV = dev.np.exp(V)
+
+        if avail is not None:
+            eV = eV*avail[:, None, :, None]  # Acommodate availablity of alts.
+
         sumeV = dev.np.sum(eV, axis=2, keepdims=True)
         sumeV[sumeV == 0] = 1e-30
         p = eV/sumeV  # (N,P,J,R)
         p = p*panel_info[:, :, None, None]  # Zero for unbalanced panels
         return p
 
-    def _loglik_gradient(self, betas, X, y, panel_info, draws, weights):
-        """
-        Compute the log-likelihood and gradient used by the optimization
-        routine. Fixed and random parameters are handled separately to
-        speed up the estimation and the results are concatenated.
+    def _loglik_gradient(self, betas, X, y, panel_info, draws, weights, avail):
+        """Compute the log-likelihood and gradient.
 
+        Fixed and random parameters are handled separately to
+        speed up the estimation and the results are concatenated.
         """
         if dev.using_gpu:
             betas = dev.to_gpu(betas)
-        p = self._compute_probabilities(betas, X, panel_info, draws)
+        p = self._compute_probabilities(betas, X, panel_info, draws, avail)
         # Probability of chosen alt
         pch = (y*p).sum(axis=2)  # (N,P,R)
         pch = self._prob_product_across_panels(pch, panel_info)  # (N,R)
@@ -297,7 +308,7 @@ class MixedLogit(ChoiceModel):
         return pch  # (N,R)
 
     def _apply_distribution(self, betas_random):
-        """Apply the mixing distribution to the random betas"""
+        """Apply the mixing distribution to the random betas."""
         for k, dist in enumerate(self._rvdist):
             if dist == 'ln':
                 betas_random[:, k, :] = dev.np.exp(betas_random[:, k, :])
@@ -307,9 +318,9 @@ class MixedLogit(ChoiceModel):
         return betas_random
 
     def _balance_panels(self, X, y, panels):
-        """
-        Balance panels if necessary and produce a new version of X and y. If
-        panels are already balanced, the same X and y are returned. This method
+        """Balance panels if necessary and produce a new version of X and y.
+
+        If panels are already balanced, the same X and y are returned. This
         also returns panel_info, which keeps track of the panels that needed
         balancing.
         """
@@ -338,9 +349,7 @@ class MixedLogit(ChoiceModel):
         return Xbal, ybal, panel_info
 
     def _compute_derivatives(self, betas, draws):
-        """
-        Compute the derivatives based on the associated mixing distributions.
-        """
+        """Compute the derivatives based on the mixing distributions."""
         N, R, Kr = draws.shape[0], draws.shape[2], self._rvidx.sum()
         der = dev.np.ones((N, Kr, R))
         if any(set(self._rvdist).intersection(['ln', 'tn'])):
@@ -353,9 +362,9 @@ class MixedLogit(ChoiceModel):
         return der
 
     def _transform_betas(self, betas, draws):
-        """
-        Compute the products between the betas and the random coefficients and
-        apply the associated mixing distributions
+        """Compute the products between the betas and the random coefficients.
+
+        This method also applies the associated mixing distributions
         """
         # Extract coeffiecients from betas array
         betas_fixed = betas[np.where(~self._rvidx)[0]]
@@ -367,7 +376,7 @@ class MixedLogit(ChoiceModel):
         return betas_fixed, betas_random
 
     def _generate_draws(self, sample_size, n_draws, halton=True):
-        """Generate draws based on the given mixing distributions"""
+        """Generate draws based on the given mixing distributions."""
         if halton:
             draws = self._get_halton_draws(sample_size, n_draws,
                                            len(self._rvdist))
@@ -388,11 +397,11 @@ class MixedLogit(ChoiceModel):
         return draws  # (N,Kr,R)
 
     def _get_random_draws(self, sample_size, n_draws, n_vars):
-        """Generate random uniform draws between 0 and 1"""
+        """Generate random uniform draws between 0 and 1."""
         return np.random.uniform(size=(sample_size, n_vars, n_draws))
 
     def _get_halton_draws(self, sample_size, n_draws, n_vars, shuffled=False):
-        """Generate halton draws between 0 and 1"""
+        """Generate halton draws between 0 and 1."""
         primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47,
                   53, 59, 61, 71, 73, 79, 83, 89, 97, 101, 103, 107,
                   109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167,
@@ -429,6 +438,7 @@ class MixedLogit(ChoiceModel):
                              "Accepted distrubtions are n, ln, t, u, tn")
 
     def summary(self):
+        """Show estimation results in console."""
         super(MixedLogit, self).summary()
 
     @staticmethod

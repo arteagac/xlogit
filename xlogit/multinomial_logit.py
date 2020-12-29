@@ -56,8 +56,8 @@ class MultinomialLogit(ChoiceModel):
     """
 
     def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
-            weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
-            maxiter=2000, random_state=None, verbose=1):
+            weights=None, avail=None, base_alt=None, fit_intercept=False,
+            init_coeff=None, maxiter=2000, random_state=None, verbose=1):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -84,6 +84,10 @@ class MultinomialLogit(ChoiceModel):
         weights : array-like, shape (n_variables,), default=None
             Weights for the choice situations in long format.
 
+        avail: array-like, shape (n_samples,)
+            Availability of alternatives for the choice situations. One when
+            available or zero otherwise.
+
         base_alt : int, float or str, default=None
             Base alternative
 
@@ -108,9 +112,9 @@ class MultinomialLogit(ChoiceModel):
         -------
         None.
         """
-
-        X, y, varnames, alts, isvars, ids, weights, _\
-            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None)
+        X, y, varnames, alts, isvars, ids, weights, _, avail\
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None,
+                             avail)
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
                               base_alt, fit_intercept, maxiter)
 
@@ -123,6 +127,9 @@ class MultinomialLogit(ChoiceModel):
         X, Xnames = self._setup_design_matrix(X)
         y = y.reshape(X.shape[0], X.shape[1])
 
+        if avail is not None:
+            avail = avail.reshape(X.shape[0], X.shape[1])
+
         if init_coeff is None:
             betas = np.repeat(.0, X.shape[2])
         else:
@@ -132,22 +139,22 @@ class MultinomialLogit(ChoiceModel):
                                  + int(X.shape[1]))
 
         # Call optimization routine
-        optimizat_res = self._bfgs_optimization(betas, X, y, weights, maxiter)
+        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail,
+                                                maxiter)
         self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
 
-    def _compute_probabilities(self, betas, X):
-        """Compute classic logit-based probabilities"""
+    def _compute_probabilities(self, betas, X, avail):
+        """Compute classic logit-based probabilities."""
         XB = X.dot(betas)
         eXB = np.exp(XB)
+        if avail is not None:
+            eXB = eXB*avail
         p = eXB/np.sum(eXB, axis=1, keepdims=True)  # (N,J)
         return p
 
-    def _loglik_and_gradient(self, betas, X, y, weights):
-        """
-        Computes log-likelihood, gradient, and hessian required by the
-        optimization routine
-        """
-        p = self._compute_probabilities(betas, X)
+    def _loglik_and_gradient(self, betas, X, y, weights, avail):
+        """Compute log-likelihood, gradient, and hessian."""
+        p = self._compute_probabilities(betas, X, avail)
         # Log likelihood
         lik = np.sum(y*p, axis=1)
         loglik = np.log(lik)
@@ -165,11 +172,12 @@ class MultinomialLogit(ChoiceModel):
         return -loglik, -grad, Hinv
 
     def summary(self):
+        """Show estimation results in console."""
         super(MultinomialLogit, self).summary()
 
-    def _bfgs_optimization(self, betas, X, y, weights, maxiter):
-        """BFGS optimization routine"""
-        res, g, Hinv = self._loglik_and_gradient(betas, X, y, weights)
+    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter):
+        """BFGS optimization routine."""
+        res, g, Hinv = self._loglik_and_gradient(betas, X, y, weights, avail)
         current_iteration = 0
         convergence = False
         while True:
@@ -183,7 +191,7 @@ class MultinomialLogit(ChoiceModel):
                 s = step*d
                 betas = betas + s
                 resnew, gnew, _ = self._loglik_and_gradient(betas, X, y,
-                                                            weights)
+                                                            weights, avail)
                 if resnew <= res or step < 1e-10:
                     break
 

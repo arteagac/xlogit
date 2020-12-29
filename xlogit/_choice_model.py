@@ -1,12 +1,10 @@
-"""
-Implements multinomial and mixed logit models
-"""
+"""Implements multinomial and mixed logit models."""
 # pylint: disable=invalid-name
 
 import numpy as np
 from scipy.stats import t
 from time import time
-from abc import ABC, abstractmethod
+from abc import ABC
 import warnings
 
 """
@@ -20,7 +18,7 @@ Notations
 
 
 class ChoiceModel(ABC):
-    """Base class for estimation of discrete choice models"""
+    """Base class for estimation of discrete choice models."""
 
     def __init__(self):
         self.coeff_names = None
@@ -42,13 +40,8 @@ class ChoiceModel(ABC):
         self.total_fun_eval = 0
         self.verbose = 1
 
-    @abstractmethod
-    def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
-            weights=None, base_alt=None, fit_intercept=False, init_coeff=None,
-            maxiter=2000, random_state=None):
-        pass
-
-    def _as_array(self, X, y, varnames, alts, isvars, ids, weights, panels):
+    def _as_array(self, X, y, varnames, alts, isvars, ids, weights, panels,
+                  avail):
         X = np.asarray(X)
         y = np.asarray(y)
         varnames = np.asarray(varnames) if varnames is not None else None
@@ -57,7 +50,8 @@ class ChoiceModel(ABC):
         ids = np.asarray(ids) if ids is not None else None
         weights = np.asarray(weights) if weights is not None else None
         panels = np.asarray(panels) if panels is not None else None
-        return X, y, varnames, alts, isvars, ids, weights, panels
+        avail = np.asarray(avail) if avail is not None else None
+        return X, y, varnames, alts, isvars, ids, weights, panels, avail
 
     def _pre_fit(self, alts, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
@@ -91,7 +85,9 @@ class ChoiceModel(ABC):
             print("Message: "+optimization_res['message'])
 
     def _setup_design_matrix(self, X):
-        """Setup the design matrix by adding the intercept when necessary and
+        """Setups and reshapes input data after adding isvars and intercept.
+
+        Setup the design matrix by adding the intercept when necessary and
         converting the isvars to a dummy representation that removes the base
         alternative.
         """
@@ -143,9 +139,9 @@ class ChoiceModel(ABC):
         return X, names
 
     def _check_long_format_consistency(self, ids, alts, sorted_idx):
-        """
-        Ensure that data in long format is consistent. It raises an
-        error if the array of alternative indexes is incomplete
+        """Ensure that data in long format is consistent.
+
+        It raises an error if the array of alternative indexes is incomplete
         """
         alts = alts[sorted_idx]
         uq_alts = np.unique(alts)
@@ -157,9 +153,10 @@ class ChoiceModel(ABC):
             raise ValueError('inconsistent alts and ids values in long format')
 
     def _arrange_long_format(self, X, y, ids, alts, panels=None):
-        """
-        Sort the input data to make sure that data can be safely reshaped
-        later to do everything in terms of matrix products.
+        """Sort the input data for easy reshaping in future steps.
+
+        This ensures that that data can be safely reshaped later to do
+        everything in terms of matrix products.
         """
         if ids is not None:
             pnls = panels if panels is not None else np.ones(len(ids))
@@ -179,9 +176,7 @@ class ChoiceModel(ABC):
 
     def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights,
                          base_alt, fit_intercept, maxiter):
-        """
-        Validates potential mistakes in the input data.
-        """
+        """Validate potential mistakes in the input data."""
         if varnames is None:
             raise ValueError('The parameter varnames is required')
         if alts is None:
@@ -198,7 +193,6 @@ class ChoiceModel(ABC):
 
     def summary(self):
         """Show estimation results in console."""
-
         if self.coeff_ is None:
             warnings.warn("The current model has not been yet estimated",
                           UserWarning)

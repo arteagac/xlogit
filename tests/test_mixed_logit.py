@@ -43,7 +43,7 @@ def test_log_likelihood():
     draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
     panel_info = np.ones((N, P))
     obtained_loglik, _ = model._loglik_gradient(betas, X_, y_, panel_info,
-                                                draws, None)
+                                                draws, None, None)
 
     # Compute expected log likelihood "by hand"
     Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]

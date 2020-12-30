@@ -1,13 +1,15 @@
 import setuptools
-with open("README.rst", "r") as fh:
+import codecs
+
+with codecs.open('README.rst', encoding='utf8') as fh:
     long_description = fh.read()
 
 setuptools.setup(name='xlogit',
-                 version='0.1.0',
+                 version='0.1.1',
                  description='A Python package for GPU-accelerated ' +
                  'estimation of mixed logit models.',
                  long_description=long_description,
-                 long_description_content_type="text/markdown",
+                 long_description_content_type="text/x-rst",
                  url='https://github.com/arteagac/xlogit',
                  author='Cristian Arteaga',
                  author_email='cristiandavidarteaga@gmail.com',

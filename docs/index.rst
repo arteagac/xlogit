@@ -14,4 +14,10 @@
    :caption: API Reference
 
    api/index
+   
+.. toctree::
+   :maxdepth: 1
+   :caption: Misc Notes
+   
    benchmark
+   contributing

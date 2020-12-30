@@ -7,15 +7,18 @@ xlogit: A Python package for GPU-accelerated estimation of mixed logit models.
 .. _Mixed Logit: https://xlogit.readthedocs.io/en/latest/api/mixed_logit.html
 .. _Multinomial Logit: https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html
 
+`Examples <https://xlogit.readthedocs.io/en/latest/examples.html>`__ | `Docs <https://xlogit.readthedocs.io/en/latest/index.html>`__ | `Installation <https://xlogit.readthedocs.io/en/latest/install.html>`__ | `API Reference <https://xlogit.readthedocs.io/en/latest/api/index.html>`__
+
 Quick start
 ===========
-The following example uses ``xlogit`` to estimate a mixed logit model for choices of fishing modes. See the data `here <https://github.com/arteagac/xlogit/blob/master/examples/data/fishing_long.csv>`__ and more information about the data `here <https://doi.org/10.1162/003465399767923827>`__. The parameters are:
+The following example uses ``xlogit`` to estimate a mixed logit model for choices of electricity supplier (`See the data here <https://github.com/arteagac/xlogit/blob/master/examples/data/electricity_long.csv>`__). The parameters are:
 
 * ``X``: 2-D array of input data (in long format) with choice situations as rows, and variables as columns
 * ``y``: 1-D array of choices (in long format)
 * ``varnames``: List of variable names that matches the number and order of the columns in ``X``
 * ``alts``:  1-D array of alternative indexes or an alternatives list
 * ``ids``:  1-D array of the ids of the choice situations
+* ``panels``: 1-D array of ids for panel formation
 * ``randvars``: dictionary of variables and their mixing distributions (``"n"`` normal, ``"ln"`` lognormal, ``"t"`` triangular, ``"u"`` uniform, ``"tn"`` truncated normal)
 
 The current version of `xlogit` only supports input data in long format.
@@ -24,39 +27,49 @@ The current version of `xlogit` only supports input data in long format.
 
     # Read data from CSV file
     import pandas as pd
-    df = pd.read_csv("examples/data/fishing_long.csv")
-
-    X = df[['price', 'catch']]
-    y = df['choice']
-
+    df = pd.read_csv("examples/data/electricity_long.csv")
+    varnames = ["pf", "cl", "loc", "wk", "tod", "seas"]
+    X = df[varnames].values
+    y = df['choice'].values
+    
     # Fit the model with xlogit
     from xlogit import MixedLogit
     model = MixedLogit()
     model.fit(X, y,
-              varnames=['price', 'catch'],
-              ids=df['id'],
+              varnames,
               alts=df['alt'],
-              randvars={'price': 'n', 'catch': 'n'})
+              randvars={'pf': 'n','cl':'n','loc':'n','wk':'n','tod':'n','seas':'n'},
+              panels=df.id.values,
+              n_draws=600)
     model.summary()
 
 
 ::
 
-    Estimation succesfully completed after 21 iterations.
-    ------------------------------------------------------------------------
-    Coefficient           Estimate      Std.Err.         z-val         P>|z|
-    ------------------------------------------------------------------------
-    price               -0.0274061     0.0022827   -12.0062499       2.2e-30 ***
-    catch                1.3345446     0.1735364     7.6902874      2.29e-13 ***
-    sd.price             0.0104608     0.0020466     5.1113049      1.93e-06 ***
-    sd.catch             1.5857201     0.3746104     4.2329844      0.000109 ***
-    ------------------------------------------------------------------------
+    Estimation with GPU processing enabled.
+    Optimization terminated successfully.
+    Estimation time= 5.2 seconds
+    ---------------------------------------------------------------------------
+    Coefficient              Estimate      Std.Err.         z-val         P>|z|
+    ---------------------------------------------------------------------------
+    pf                     -0.9996286     0.0331488   -30.1557541     9.98e-100 ***
+    cl                     -0.2355334     0.0220401   -10.6865870      1.97e-22 ***
+    loc                     2.2307891     0.1164263    19.1605300      5.64e-56 ***
+    wk                      1.6251657     0.0918755    17.6887855      6.85e-50 ***
+    tod                    -9.6067367     0.3112721   -30.8628296     2.36e-102 ***
+    seas                   -9.7892800     0.2913063   -33.6047603     2.81e-112 ***
+    sd.pf                   0.2357813     0.0181892    12.9627201      7.25e-31 ***
+    sd.cl                   0.4025377     0.0220183    18.2819903      2.43e-52 ***
+    sd.loc                  1.9262893     0.1187850    16.2166103      7.67e-44 ***
+    sd.wk                  -1.2192931     0.0944581   -12.9083017      1.17e-30 ***
+    sd.tod                  2.3354462     0.1741859    13.4077786      1.37e-32 ***
+    sd.seas                -1.4200913     0.2095869    -6.7756668       3.1e-10 ***
+    ---------------------------------------------------------------------------
     Significance:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-
-    Log-Likelihood= -1300.227
-    AIC= 2608.454
-    BIC= 2628.754
-    Estimation time= 0.7 seconds
+    
+    Log-Likelihood= -3888.413
+    AIC= 7800.827
+    BIC= 7847.493
 
 
 For more examples of ``xlogit`` see `this Jupyter Notebook in Google Colab <https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb>`__. Google Colab provides GPU processing for free, which will help you to significantly speed up your model estimation using ``xlogit``.
@@ -106,6 +119,11 @@ The current version allows estimation of:
 - `Multinomial Logit`_ models
 - `Conditional logit <https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html>`_ models
 - Weighed regression for all of the logit-based models
+
+Contact
+=======
+
+If you have any questions, ideas to improve ``xlogit``, or want to report a bug, just open a `new issue in xlogit's GitHub repository <https://github.com/arteagac/xlogit/issues>`__ .
 
 Citing ``xlogit``
 =================

@@ -7,7 +7,7 @@ xlogit: A Python package for GPU-accelerated estimation of mixed logit models.
 .. _Mixed Logit: https://xlogit.readthedocs.io/en/latest/api/mixed_logit.html
 .. _Multinomial Logit: https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html
 
-`Examples <https://xlogit.readthedocs.io/en/latest/examples.html>`__ | `Docs <https://xlogit.readthedocs.io/en/latest/index.html>`__ | `Installation <https://xlogit.readthedocs.io/en/latest/install.html>`__ | `API Reference <https://xlogit.readthedocs.io/en/latest/api/index.html>`__
+`Examples <https://xlogit.readthedocs.io/en/latest/examples.html>`__ | `Docs <https://xlogit.readthedocs.io/en/latest/index.html>`__ | `Installation <https://xlogit.readthedocs.io/en/latest/install.html>`__ | `API Reference <https://xlogit.readthedocs.io/en/latest/api/index.html>`__ | `Contributing <https://xlogit.readthedocs.io/en/latest/contributing.html>`__ | `Contact <https://xlogit.readthedocs.io/en/latest/index.html#contact>`__ 
 
 Quick start
 ===========
@@ -72,7 +72,7 @@ The current version of `xlogit` only supports input data in long format.
     BIC= 7847.493
 
 
-For more examples of ``xlogit`` see `this Jupyter Notebook in Google Colab <https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb>`__. Google Colab provides GPU processing for free, which will help you to significantly speed up your model estimation using ``xlogit``.
+For more examples of ``xlogit`` see `this Jupyter Notebook in Google Colab <https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb>`__. **Google Colab provides GPU resources for free**, which will significantly speed up your model estimation using ``xlogit``.
 
 Quick install
 =============
@@ -85,9 +85,10 @@ Install ``xlogit`` using ``pip`` as follows:
 
 .. hint::
 
-   To enable GPU processing, you must install the `CuPy Python library <https://docs.cupy.dev/en/stable/install.html>`__.  When ``xlogit`` detects that CuPy is properly installed, it switches to GPU processing without any additional setup. 
+   To enable GPU processing, you must install the `CuPy Python library <https://docs.cupy.dev/en/stable/install.html>`__.  When ``xlogit`` detects that CuPy is properly installed, it switches to GPU processing without any additional setup. If you use Google Colab, CuPy is usually installed by default.
 
-For additional installation details check `xlogit documentation <https://xlogit.readthedocs.io/en/latest/install.html>`__.
+
+For additional installation details check xlogit installation instructions at: https://xlogit.readthedocs.io/en/latest/install.html
 
 
 No GPU? No problem

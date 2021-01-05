@@ -29,17 +29,18 @@ The current version of `xlogit` only supports input data in long format.
     import pandas as pd
     df = pd.read_csv("examples/data/electricity_long.csv")
     varnames = ["pf", "cl", "loc", "wk", "tod", "seas"]
-    X = df[varnames].values
-    y = df['choice'].values
+    X = df[varnames]
+    y = df['choice']
     
     # Fit the model with xlogit
     from xlogit import MixedLogit
     model = MixedLogit()
-    model.fit(X, y,
+    model.fit(X, y, 
               varnames,
               alts=df['alt'],
-              randvars={'pf': 'n','cl':'n','loc':'n','wk':'n','tod':'n','seas':'n'},
-              panels=df.id.values,
+              ids=df['chid'],
+              panels=df['id'],
+              randvars={'pf': 'n','cl':'n','loc':'n','wk':'n','tod':'n','seas':'n'}, 
               n_draws=600)
     model.summary()
 

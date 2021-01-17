@@ -1,20 +1,13 @@
 # This code estimates a mixed logit model for the artificial
-# dataset using apollo. For installation:
-# Make sure the versions of g++, gcc, and gfortran match, otherwise you'll get an error
-# Install R version 4.0.3 and then run (may need admin permissions)
-# install.packages("devtools")
-# install.packages("https://cran.r-project.org/src/contrib/Archive/RcppArmadillo/RcppArmadillo_0.9.850.1.0.tar.gz",repos=NULL,type="source")
-# install.packages(c("maxLik", "mnormt", "mvtnorm", "coda", "sandwich", "randtoolbox", "numDeriv", "RSGHB", "Deriv"), "RcppEigen")
-# install.packages("http://www.apollochoicemodelling.com/files/apollo_0.1.0.tar.gz",repos=NULL,type="source")
-# These specific versions need to be kept. Otherwise Apollo won't install
-
+# This code works with the version 0.2.2, which is the one available by default
+# in CRAN at the time when this benchmark was developed. 
 args = commandArgs(trailingOnly=TRUE)
 if(length(args)== 2){
   n_draws = strtoi(args[1])
   n_cores = strtoi(args[2])
 }else{
   n_draws = 100
-  n_cores = 6
+  n_cores = 4
 }
 
 
@@ -69,14 +62,14 @@ apollo_fixed = c()
 
 ### Set parameters for generating draws
 apollo_draws = list(
-  interDrawsType = "",
-  interNDraws    = 0,
-  interUnifDraws = c(),
-  interNormDraws = c(),
-  intraDrawsType = "halton",
-  intraNDraws    = n_draws,
+  intraDrawsType = "",
+  intraNDraws    = 0,
   intraUnifDraws = c(),
-  intraNormDraws = c("draws_emipp","draws_meals","draws_petfr")
+  intraNormDraws = c(),
+  interDrawsType = "halton",
+  interNDraws    = n_draws,
+  interUnifDraws = c(),
+  interNormDraws = c("draws_emipp","draws_meals","draws_petfr")
 )
 
 ### Create random parameters
@@ -137,7 +130,7 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
   #P = apollo_panelProd(P, apollo_inputs, functionality)
 
   ### Average across inter-individual draws
-  P = apollo_avgIntraDraws(P, apollo_inputs, functionality)
+  P = apollo_avgInterDraws(P, apollo_inputs, functionality)
 
   ### Prepare and return outputs of function
   P = apollo_prepareProb(P, apollo_inputs, functionality)

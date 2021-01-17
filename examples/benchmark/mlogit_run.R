@@ -56,7 +56,7 @@ if(profile){
     log(paste(res, collapse=" "))
     cat(paste("mlogit", dataset, n_draws, time, model$logLik[1], mem, 0,
         model$est.stat$code == 1, sep=","), file = "results/benchmark_results.csv", sep="\n", append=TRUE)
-    invisible(file.remove("Rprof.out"))
+    #invisible(file.remove("Rprof.out"))
 }else{
     model = run_estimation()
     summ = coef(summary(model))

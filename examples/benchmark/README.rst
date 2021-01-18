@@ -15,12 +15,7 @@ This benchmark should not take longer than one hour of execution. The source cod
 
 Option 2: Mini benchmark
 ========================
-This is a minimal version of the full replication of the benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. At the end of the execution, the figures and output are saved in the "benchmark/results" folder. The file "benchmark_results.out" contains the information used to create the tables and figures in the paper as follows:
-
-* The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1.
-* The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
-* The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
-* The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
+This is a minimal version of the full replication of the benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. 
 
 .. hint::
    **(OPTIONAL) Docker image available:** If you have a Linux machine, the easiest way to run the mini (and full) benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run::
@@ -153,16 +148,16 @@ Finally, run the benchmark using the following command::
 
     python benchmark.py mini
 
-**The results of the benchmark (including the plots) are saved in the "benchmark/results/" folder.** The file ``benchmark_results.out`` contains all the messages generated during the execution. During the execution in Microsoft Windows, the Anaconda Powershell Prompt sometimes gets stuck and stops showing the output. In this case, just press Enter every once in a while and the output will be shown again. Also, sometimes you may think the benchmark has frozen as it does not show any output for a long time; however, this is not an issue as the estimation processes are still running in the background. This is caused by the slow estimation time that some packages have.
-
-Option 3: Full benchmark
-========================
-This is the full version of the benchmark, which should take from 12 to 24 hours to run. A very powerful computer is needed for this benchmark as it evaluates the performance of ``apollo`` and ``biogeme`` using up to 64 processor cores. At the end of the execution, the figures and output are saved in the "benchmark/results" folder. The file "benchmark_results.out" contains the information used to create the tables and figures in the paper as follows:
+During the execution in Microsoft Windows, the Anaconda Powershell Prompt sometimes gets stuck and stops showing the output. In this case, just press Enter every once in a while and the output will be shown again. Also, sometimes you may think the benchmark has frozen as it does not show any output for a long time; however, this is not an issue as the estimation processes are still running in the background. This is caused by the slow estimation time that some packages have. At the end of the execution, **the figures and output are saved in the "benchmark/results" folder**. The file ``benchmark_results.out`` contains the information used to create the tables and figures in the paper as follows:
 
 * The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1.
 * The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
 * The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
 * The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
+
+Option 3: Full benchmark
+========================
+This is the full version of the benchmark, which should take from 12 to 24 hours to run. A very powerful computer is needed for this benchmark as it evaluates the performance of ``apollo`` and ``biogeme`` using up to 64 processor cores. 
 
 .. hint::
    **(OPTIONAL) Docker image available:** Similar to the mini benchmark, if you have a Linux machine, the easiest way to run the full benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run the following command (note that this command is different to the one for the mini benchmark)::
@@ -187,4 +182,9 @@ Follow the same steps as in the mini-benchmark (section 2.2) to install the  all
 
     python benchmark.py
 
-**The results of the benchmark (including the plots) are saved in the "benchmark/results/" folder.** The file ``benchmark_results.out`` contains all the messages generated during the execution.
+At the end of the execution, **the figures and output are saved in the "benchmark/results" folder**. The file ``benchmark_results.out`` contains the information used to create the tables and figures in the paper as follows:
+
+* The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1.
+* The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
+* The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
+* The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.

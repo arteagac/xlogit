@@ -6,7 +6,7 @@ Benchmark
 
 Option 1: Quick benchmark in Google Colab
 =========================================
-This is the easiest way to execute the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme), as Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the execution cells.
+This is the easiest way to execute the replication of the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme), as Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the execution cells.
 
 https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb
 
@@ -15,7 +15,7 @@ This benchmark should not take longer than one hour of execution. The source cod
 
 Option 2: Mini benchmark
 ========================
-This is a minimal version of the full benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. At the end of the execution, the figures and output are saved in the "benchmark/results" folder. The file "benchmark_results.out" contains the information used to create the tables and figures in the paper as follows:
+This is a minimal version of the full replication of the benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. At the end of the execution, the figures and output are saved in the "benchmark/results" folder. The file "benchmark_results.out" contains the information used to create the tables and figures in the paper as follows:
 
 * The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1.
 * The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.

@@ -1,6 +1,13 @@
-**** GPU PROCESSING PROPERLY INITIALIZED ****
+# NOTE: 
+# * The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1 and part of Figure 2.
+# * The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
+# * The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
+# * The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
+
 
 ********* PYLOGIT AND MLOGIT BENCHMARK *********
+
+
 === artificial dataset. xlogit_run.py(using GPU) ===
 Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
    100    1.32    -2275.85   0.438   0.114 True
@@ -263,6 +270,7 @@ Log.Lik:    -3888.47
 
 
 ********* APOLLO AND BIOGEME BENCHMARK *********
+
 === artificial dataset. biogeme_run.py ===
 draws=100 cores=16 time(s)=92.49 LogLik=-2287.06
 draws=100 cores=32 time(s)=45.99 LogLik=-2291.40
@@ -295,6 +303,7 @@ draws= 1500  cores= 64  time(s)= 415.78  LogLik -2278.02
 
 
  ********* TABLE COMPARISON ESTIMATION TIME *********
+ 
                    Estimation time               Compared to xlogit_gpu        
 library         100    500   1000   1500   c100   c500  c1000  c1500  c_avg
 apollo        141.7  206.4  261.8  415.8  107.2   48.4   33.7   36.5   56.5

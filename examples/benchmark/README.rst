@@ -6,16 +6,21 @@ Benchmark
 
 Option 1: Quick benchmark in Google Colab
 =========================================
-This is the easiest way to execute the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme) because Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the execution cells.
+This is the easiest way to execute the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme), as Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the execution cells.
 
 https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb
 
-This benchmark should not take longer than one hour of execution. The source code of this benchmark can be found in the provided "benchmark" folder or in the "examples/benchmark" folder in the `Github repository <https://github.com/arteagac/xlogit>`__.
+This benchmark should not take longer than one hour of execution. The source code of this quick benchmark can be found in the provided "benchmark" folder or in the "examples/benchmark" folder in the `Github repository <https://github.com/arteagac/xlogit>`__.
 
 
 Option 2: Mini benchmark
 ========================
-This is a minimal version of the full benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line.
+This is a minimal version of the full benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. At the end of the execution, the figures and output are saved in the "benchmark/results" folder. The file "benchmark_results.out" contains the information used to create the tables and figures in the paper as follows:
+
+* The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1.
+* The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
+* The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
+* The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
 
 .. hint::
    **(OPTIONAL) Docker image available:** If you have a Linux machine, the easiest way to run the mini (and full) benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run::
@@ -152,7 +157,12 @@ Finally, run the benchmark using the following command::
 
 Option 3: Full benchmark
 ========================
-This is the full version of the benchmark, which should take from 12 to 24 hours to run. A very powerful computer is needed for this benchmark as it evaluates the performance of ``apollo`` and ``biogeme`` using up to 64 processor cores.
+This is the full version of the benchmark, which should take from 12 to 24 hours to run. A very powerful computer is needed for this benchmark as it evaluates the performance of ``apollo`` and ``biogeme`` using up to 64 processor cores. At the end of the execution, the figures and output are saved in the "benchmark/results" folder. The file "benchmark_results.out" contains the information used to create the tables and figures in the paper as follows:
+
+* The section titled "PYLOGIT AND MLOGIT BENCHMARK" contains all results for Figure 1.
+* The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
+* The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
+* The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
 
 .. hint::
    **(OPTIONAL) Docker image available:** Similar to the mini benchmark, if you have a Linux machine, the easiest way to run the full benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run the following command (note that this command is different to the one for the mini benchmark)::

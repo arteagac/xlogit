@@ -6,7 +6,7 @@ Benchmark
 
 Option 1: Quick benchmark in Google Colab
 =========================================
-This is the easiest way to execute the replication of the benchmark. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme), as Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the execution cells.
+This is the easiest way to execute the benchmark replication. Nothing needs to be installed, you just need a Gmail account to access Google Colab, which provides GPU resources for free. This benchmark is limited to the comparison of the Python tools (xlogit, pylogit, and biogeme), as Google Colab does not run R code (for apollo and mlogit). However, this quick benchmark demonstrates how fast ``xlogit`` is compared to existing tools and resembles to a large extent the tables and figures in the paper.  To execute this benchmark, click the link below and select ``Runtime > Run all`` to run all the execution cells.
 
 https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb
 
@@ -15,7 +15,7 @@ This benchmark should not take longer than one hour of execution. The source cod
 
 Option 2: Mini benchmark
 ========================
-This is a minimal version of the full replication of the benchmark that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. 
+This is a minimal version of the full benchmark replication that can be executed in less than one hour (or a little longer depending on your computer specs). Executing this benchmark requires some basic knowledge in execution of commands in a Microsoft Windows or Linux command line. 
 
 .. hint::
    **(OPTIONAL) Docker image available:** If you have a Linux machine, the easiest way to run the mini (and full) benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run::
@@ -36,7 +36,7 @@ This is a minimal version of the full replication of the benchmark that can be e
 
 2.2 Installation steps
 ----------------------
-Given that this benchmark compares five different estimation packages, several dependencies need to be installed. However, the following instructions provide all the necessary details for the installation of the dependencies. If you use Microsoft Windows, some steps require to run an Anaconda Power Shell prompt, which you should **always run as administrator** to avoid any permission issues. Additional details are provided below.
+Given that this benchmark compares five different estimation packages, several dependencies need to be installed. However, the following instructions provide all the necessary details for the installation of the dependencies. If you use Microsoft Windows, some steps require running an Anaconda Power Shell prompt, which you should **always run as administrator** to avoid any permission issues. Additional details are provided below.
 
 Step 1. Setup Python tools
 ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -51,7 +51,7 @@ After installing miniconda, open a command line in Linux or the Anaconda Powersh
 
     conda --version
 
-Step 1.2 Setup a conda Python envinronment
+Step 1.2 Setup a conda Python environment
 """"""""""""""""""""""""""""""""""""""""""
 Create and activate a conda environment (Python 3.8) for the benchmark by executing the following commands in a command line or the Anaconda Powershell Prompt in Windows::
 
@@ -84,7 +84,7 @@ CuPy is required to use GPU processing in ``xlogit``. Follow these steps to inst
 
     pip install cupy-cuda110
 
-   After this, you need to close your command line (or Anaconda Powershell Prompt in windows) and open it again so the changes take effect. Remember that after reopeing the command line you need to run again ``conda activate benchmark``.
+   After this, you need to close your command line (or Anaconda Powershell Prompt in windows) and open it again so the changes take effect. Remember that after reopening the command line you need to run again ``conda activate benchmark``.
 
 5. Verify that CuPy was properly installed by running the following command, which must run without showing any errors::
 
@@ -114,9 +114,9 @@ Step 2.1 Install R v4.0
 """""""""""""""""""""""
 You must use R version 4.0.3 (and not 3.6) for the benchmark as the installation of dependencies is easier with this version. 
 
-* For Windows: Download R v4.0 from  https://cran.r-project.org/bin/windows/base/R-4.0.3-win.exe and follow the installation prompts. Make sure that R is available from the Anaconda Powershell Prompt by executing ``Rscript --version``. If this command does not run properly, you need to add **R's installation folder path** (including the "bin" folder) to the Path envinronment variable as shown in the image in `this link <https://arteagac.github.io/images/other/add_environment_variable_win10.png>`__. For instance, a common R installation folder is ``C:\Program Files\R\R-4.0.3\bin`` (note that the ``bin`` folder at the end of the path is **required**). After adding your R installation folder to the Path envinronment variable, you need to close your Anaconda Powershell Prompt and open it again **in Administrator mode** (Right click Anaconda Powershell Prompt and select "Run as Administrator") so the changes take effect. Remember that after reopeing the command line you need to run again ``conda activate benchmark``.
+* For Windows: Download R v4.0 from  https://cran.r-project.org/bin/windows/base/R-4.0.3-win.exe and follow the installation prompts. Make sure that R is available from the Anaconda Powershell Prompt by executing ``Rscript --version``. If this command does not run properly, you need to add **R's installation folder path** (including the "bin" folder) to the Path environment variable as shown in the image in `this link <https://arteagac.github.io/images/other/add_environment_variable_win10.png>`__. For instance, a common R installation folder is ``C:\Program Files\R\R-4.0.3\bin`` (note that the ``bin`` folder at the end of the path is **required**). After adding your R installation folder to the Path environment variable, you need to close your Anaconda Powershell Prompt and open it again **in Administrator mode** (Right click Anaconda Powershell Prompt and select "Run as Administrator") so the changes take effect. Remember that after reopeing the command line you need to run again ``conda activate benchmark``.
 
-* For Linux: Depending on your distrubution, different instructions for installation of R 4.0.3 are available at https://docs.rstudio.com/resources/install-r/. Just make sure you select v4.0.3, instead of 3.6, which is the default suggested by the instructions. 
+* For Linux: Depending on your distribution, different instructions for installation of R 4.0.3 are available at https://docs.rstudio.com/resources/install-r/. Just make sure you select v4.0.3, instead of 3.6, which is the default suggested by the instructions. 
 
 .. hint::
    For instance, if you use Ubuntu 20.04, you need to run the following commands to install Rv4.0::
@@ -155,9 +155,11 @@ During the execution in Microsoft Windows, the Anaconda Powershell Prompt someti
 * The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
 * The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
 
+The usage example in Section 3.3 of the paper is not part of the output file but it can be found in the Google Colab file https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb in the section titled "Part 5: Fishing dataset usage example"
+
 Option 3: Full benchmark
 ========================
-This is the full version of the benchmark, which should take from 12 to 24 hours to run. A very powerful computer is needed for this benchmark as it evaluates the performance of ``apollo`` and ``biogeme`` using up to 64 processor cores. 
+This is the full version of the benchmark replication, which should take from 12 to 24 hours to run. A very powerful computer is needed for this benchmark as it evaluates the performance of ``apollo`` and ``biogeme`` using up to 64 processor cores. 
 
 .. hint::
    **(OPTIONAL) Docker image available:** Similar to the mini benchmark, if you have a Linux machine, the easiest way to run the full benchmark is using the Docker image ``arteagac/xlogit:benchmark`` in Docker's Hub. You just need to `install Docker <https://docs.docker.com/engine/install/ubuntu/>`__ and run the following command (note that this command is different to the one for the mini benchmark)::
@@ -178,7 +180,7 @@ This is the full version of the benchmark, which should take from 12 to 24 hours
 
 3.2 Installation steps
 ----------------------
-Follow the same steps as in the mini-benchmark (section 2.2) to install the  all the dependencies. The only difference is the final command to execute the benchmark that must be in this case::
+Follow the same steps as in the mini-benchmark (section 2.2) to install all the dependencies. The only difference is the final command to execute the benchmark that must be in this case::
 
     python benchmark.py
 

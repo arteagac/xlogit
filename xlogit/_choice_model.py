@@ -152,6 +152,22 @@ class ChoiceModel(ABC):
         if not np.all(obs_by_id/len(uq_alts)):  # Multiple of J
             raise ValueError('inconsistent alts and ids values in long format')
 
+    def _format_choice_var(self, y, alts):
+        """Format choice (y) variable as one-hot encoded."""
+        uq_alts = np.unique(alts)
+        J, N = len(uq_alts), len(y)//len(uq_alts)
+        # When already one-hot encoded the sum by row is one
+        if isinstance(y[0], np.number) and \
+            np.array_equal(y.reshape(N, J).sum(axis=1), np.ones(N)):
+            return y
+        else:
+            y1h = (y == alts).astype(int)  # Apply one hot encoding
+            if np.array_equal(y1h.reshape(N, J).sum(axis=1), np.ones(N)):
+                return y1h
+            else:
+                raise ValueError("inconsistent 'y' values. Make sure the "
+                                 "data has one choice per sample")
+
     def _arrange_long_format(self, X, y, ids, alts, panels=None):
         """Sort the input data for easy reshaping in future steps.
 

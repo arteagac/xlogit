@@ -51,6 +51,21 @@ def test__validate_inputs():
         validate(X, np.array([]), alts, varnames=None, isvars=None, ids=ids,
                  weights=None, base_alt=None, fit_intercept=True, maxiter=0)
 
+def test__format_choice_var():
+    """
+    Ensures that the variable y is properly formatted as needed by internal 
+    procedures regardless of the input data type.
+    """
+    model = MultinomialLogit()
+    expected = np.array([1, 0, 0, 1, 1, 0])
+    
+    y1 = np.array([1, 1, 2, 2, 1, 1])
+    assert np.array_equal(model._format_choice_var(y1, alts), expected)
+    
+    y2 = np.array(['a', 'a', 'b', 'b', 'a', 'a'])
+    alts2 = np.array(['a', 'b', 'a', 'b', 'a', 'b',])
+    assert np.array_equal(model._format_choice_var(y2, alts2), expected)
+    
 
 def test_summary():
     """

@@ -66,7 +66,8 @@ class MultinomialLogit(ChoiceModel):
             Input data for explanatory variables in long format
 
         y : array-like, shape (n_samples,)
-            Choices in long format
+            Chosen alternatives or one-hot encoded representation
+            of the choices
 
         varnames : list, shape (n_variables,)
             Names of explanatory variables that must match the number and
@@ -121,12 +122,12 @@ class MultinomialLogit(ChoiceModel):
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
         X, y, _ = self._arrange_long_format(X, y, ids, alts)
+        y = self._format_choice_var(y, alts)
+        X, Xnames = self._setup_design_matrix(X)
+        y = y.reshape(X.shape[0], X.shape[1])
 
         if random_state is not None:
             np.random.seed(random_state)
-
-        X, Xnames = self._setup_design_matrix(X)
-        y = y.reshape(X.shape[0], X.shape[1])
 
         if avail is not None:
             avail = avail.reshape(X.shape[0], X.shape[1])

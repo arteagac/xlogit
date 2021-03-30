@@ -77,7 +77,8 @@ class MixedLogit(ChoiceModel):
             Input data for explanatory variables in long format
 
         y : array-like, shape (n_samples,)
-            Choices (outcome) in long format
+            Chosen alternatives or one-hot encoded representation
+            of the choices
 
         varnames : list, shape (n_variables,)
             Names of explanatory variables that must match the number and
@@ -154,6 +155,7 @@ class MixedLogit(ChoiceModel):
             np.random.seed(random_state)
 
         X, y, panels = self._arrange_long_format(X, y, ids, alts, panels)
+        y = self._format_choice_var(y, alts)
         X, Xnames = self._setup_design_matrix(X)
         self._model_specific_validations(randvars, Xnames)
 

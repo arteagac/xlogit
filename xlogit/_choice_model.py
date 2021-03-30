@@ -158,20 +158,18 @@ class ChoiceModel(ABC):
         This ensures that that data can be safely reshaped later to do
         everything in terms of matrix products.
         """
-        if ids is not None:
-            pnls = panels if panels is not None else np.ones(len(ids))
-            alts = alts.astype(str)
-            alts = alts if len(alts) == len(ids)\
-                else np.tile(alts, int(len(ids)/len(alts)))
-            cols = np.zeros(len(ids),
-                            dtype={'names': ['panel', 'id', 'alt'],
-                                   'formats': ['<f4', '<f4', '<U64']})
-            cols['panel'], cols['id'], cols['alt'] = pnls, ids, alts
-            sorted_idx = np.argsort(cols, order=['panel', 'id', 'alt'])
-            X, y = X[sorted_idx], y[sorted_idx]
-            if panels is not None:
-                panels = panels[sorted_idx]
-            self._check_long_format_consistency(ids, alts, sorted_idx)
+        pnls = panels if panels is not None else np.ones(len(ids))
+        alts = alts.astype(str)
+
+        cols = np.zeros(len(ids),
+                        dtype={'names': ['panel', 'id', 'alt'],
+                               'formats': ['<f4', '<f4', '<U64']})
+        cols['panel'], cols['id'], cols['alt'] = pnls, ids, alts
+        sorted_idx = np.argsort(cols, order=['panel', 'id', 'alt'])
+        X, y = X[sorted_idx], y[sorted_idx]
+        if panels is not None:
+            panels = panels[sorted_idx]
+        self._check_long_format_consistency(ids, alts, sorted_idx)
         return X, y, panels
 
     def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights,

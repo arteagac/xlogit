@@ -65,8 +65,8 @@ class MixedLogit(ChoiceModel):
         self._rvidx = None  # Index of random variables (True when random var)
         self._rvdist = None  # List of mixing distributions of rand vars
 
-    def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
-            weights=None, avail=None, randvars=None, panels=None,
+    def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, 
+            weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000,
             random_state=None, n_draws=200, halton=True, verbose=1):
         """Fit Mixed Logit models.
@@ -84,26 +84,26 @@ class MixedLogit(ChoiceModel):
             order of columns in ``X``
 
         alts : array-like, shape (n_samples,)
-            Alternative indexes in long format or list of alternative names
-
-        isvars : list
-            Names of individual-specific variables in ``varnames``
+            Alternative values in long format
 
         ids : array-like, shape (n_samples,)
             Identifiers for choice situations in long format.
-
-        weights : array-like, shape (n_variables,), default=None
-            Weights for the choice situations in long format.
-
-        avail: array-like, shape (n_samples,)
-            Availability of alternatives for the choice situations. One when
-            available or zero otherwise.
 
         randvars : dict
             Names (keys) and mixing distributions (values) of variables that
             have random parameters as coefficients. Possible mixing
             distributions are: ``'n'``: normal, ``'ln'``: lognormal,
             ``'u'``: uniform, ``'t'``: triangular, ``'tn'``: truncated normal
+
+        isvars : list
+            Names of individual-specific variables in ``varnames``
+
+        weights : array-like, shape (n_variables,), default=None
+            Weights for the choice situations in long format.
+
+        avail: array-like, shape (n_samples,), default=None
+            Availability of alternatives for the choice situations. One when
+            available or zero otherwise.
 
         panels : array-like, shape (n_samples,), default=None
             Identifiers in long format to create panels in combination with

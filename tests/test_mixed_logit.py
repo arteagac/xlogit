@@ -94,10 +94,6 @@ def test_validate_inputs():
     should be able to identify
     """
     model = MixedLogit()
-    with pytest.raises(ValueError):  # randvars is required for mixedlogit
-        model.fit(X, y, varnames=varnames, alts=alts, ids=ids, n_draws=10,
-                  maxiter=0, verbose=0, halton=True)
-
     with pytest.raises(ValueError):  # wrong distribution
         model.fit(X, y, varnames=varnames, alts=alts, ids=ids, n_draws=10,
                   maxiter=0, verbose=0, halton=True, randvars={'a': 'fake'})

@@ -55,7 +55,7 @@ class MultinomialLogit(ChoiceModel):
             Bayesian information criteria of the estimated model
     """
 
-    def fit(self, X, y, varnames=None, alts=None, isvars=None, ids=None,
+    def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
             init_coeff=None, maxiter=2000, random_state=None, verbose=1):
         """Fit multinomial and/or conditional logit models.
@@ -73,18 +73,19 @@ class MultinomialLogit(ChoiceModel):
             order of columns in ``X``
 
         alts : array-like, shape (n_samples,)
-            Alternative indexes in long format or list of alternative names
+            Alternative values in long format
 
-        isvars : list
-            Names of individual-specific variables in ``varnames``
 
         ids : array-like, shape (n_samples,)
             Identifiers for choice situations in long format.
 
+        isvars : list, default=None
+            Names of individual-specific variables in ``varnames``
+
         weights : array-like, shape (n_variables,), default=None
             Weights for the choice situations in long format.
 
-        avail: array-like, shape (n_samples,)
+        avail: array-like, shape (n_samples,), default=None
             Availability of alternatives for the choice situations. One when
             available or zero otherwise.
 

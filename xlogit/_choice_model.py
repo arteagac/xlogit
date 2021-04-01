@@ -157,7 +157,7 @@ class ChoiceModel(ABC):
         uq_alts = np.unique(alts)
         J, N = len(uq_alts), len(y)//len(uq_alts)
         # When already one-hot encoded the sum by row is one
-        if isinstance(y[0], np.number) and \
+        if isinstance(y[0], (np.number, np.bool_)) and \
             np.array_equal(y.reshape(N, J).sum(axis=1), np.ones(N)):
             return y
         else:

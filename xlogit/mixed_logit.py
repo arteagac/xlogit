@@ -458,9 +458,12 @@ class MixedLogit(ChoiceModel):
             # Test a very simple example to see if CuPy is working
             X = np.array([[2, 1], [1, 3], [3, 1], [2, 4]])
             y = np.array([0, 1, 0, 1])
+            alts = np.array([1, 2, 1, 2])
+            ids = np.array([1, 2, 3, 4])
             model = MixedLogit()
-            model.fit(X, y, varnames=["a", "b"], alts=["1", "2"], n_draws=500,
-                      randvars={'a': 'n', 'b': 'n'}, maxiter=0, verbose=0)
+            model.fit(X, y, varnames=["a", "b"], ids=ids, alts=alts,
+                      randvars={'a': 'n', 'b': 'n'}, maxiter=0, n_draws=500,
+                      verbose=0)
             print("{} GPU device(s) available. xlogit will use "
                   "GPU processing".format(n_gpus))
             return True

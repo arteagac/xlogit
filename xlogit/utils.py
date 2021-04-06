@@ -1,6 +1,7 @@
 """General utilities for xlogit library."""
 
 import numpy as np
+from scipy.stats import chi2
 
 def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
                  sep="_", alt_is_prefix=False, empty_val=np.nan):
@@ -82,3 +83,29 @@ def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
     for col in non_varying:
         newdf[col] = np.repeat(dataframe[col].values, len(alt_list))
     return newdf.sort_values(by=[id_col, alt_name], ignore_index=True)
+
+def lrtest(general_model, restricted_model):
+    """Conducts likelihood-ratio test.
+
+    Parameters
+    ----------
+    general_model : ChoiceModel from xlogit package
+        The wide-format DataFrame.
+
+    restricted_model : ChoiceModel from xlogit package
+        Column that uniquely identifies each sample.
+
+    Returns
+    -------
+    lrtest_result : dict
+        p-value result and chisq statistic and degrees of freedom used in test
+    """
+    if len(general_model.coeff_) <= len(restricted_model.coeff_):
+        raise ValueError("The general_model is expected to have less estimates"
+                         "than the restricted_model")
+    genLL, resLL = general_model.loglikelihood, restricted_model.loglikelihood
+    degfreedom = len(general_model.coeff_) - len(restricted_model.coeff_) 
+    stat = 2*(resLL - genLL)
+    return {'pval':chi2.sf(stat, df=degfreedom), 'chisq': stat,
+            'degfree': degfreedom}
+    

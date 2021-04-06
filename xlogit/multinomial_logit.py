@@ -62,10 +62,10 @@ class MultinomialLogit(ChoiceModel):
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_variables)
+        X : array-like, shape (n_samples*n_alts, n_variables)
             Input data for explanatory variables in long format
 
-        y : array-like, shape (n_samples,)
+        y : array-like, shape (n_samples*n_alts,)
             Chosen alternatives or one-hot encoded representation
             of the choices
 
@@ -73,12 +73,12 @@ class MultinomialLogit(ChoiceModel):
             Names of explanatory variables that must match the number and
             order of columns in ``X``
 
-        alts : array-like, shape (n_samples,)
+        alts : array-like, shape (n_samples*n_alts,)
             Alternative values in long format
 
 
-        ids : array-like, shape (n_samples,)
-            Identifiers for choice situations in long format.
+        ids : array-like, shape (n_samples*n_alts,)
+            Identifiers for the samples in long format.
 
         isvars : list, default=None
             Names of individual-specific variables in ``varnames``
@@ -86,8 +86,8 @@ class MultinomialLogit(ChoiceModel):
         weights : array-like, shape (n_variables,), default=None
             Weights for the choice situations in long format.
 
-        avail: array-like, shape (n_samples,), default=None
-            Availability of alternatives for the choice situations. One when
+        avail: array-like, shape (n_samples*n_alts,), default=None
+            Availability of alternatives for the samples. One when
             available or zero otherwise.
 
         base_alt : int, float or str, default=None
@@ -117,17 +117,132 @@ class MultinomialLogit(ChoiceModel):
         X, y, varnames, alts, isvars, ids, weights, _, avail\
             = self._as_array(X, y, varnames, alts, isvars, ids, weights, None,
                              avail)
-        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
-                              base_alt, fit_intercept, maxiter)
+        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
+        
+        betas, X, y, weights, avail, Xnames = \
+            self._setup_input_data(X, y, varnames, alts, ids, 
+                                   isvars=isvars, weights=weights, avail=avail,
+                                   init_coeff=init_coeff,
+                                   random_state=random_state, verbose=verbose,
+                                   predict_mode=False)
+
+        # Call optimization routine
+        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail,
+                                                maxiter)
+        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
+
+
+    def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
+                avail=None, random_state=None, verbose=1,
+                return_proba=False, return_shares=False):
+        """Predict chosen alternatives.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples*n_alts, n_variables)
+            Input data for explanatory variables in long format
+
+        varnames : list, shape (n_variables,)
+            Names of explanatory variables that must match the number and
+            order of columns in ``X``
+
+        alts : array-like, shape (n_samples*n_alts,)
+            Alternative values in long format
+
+        ids : array-like, shape (n_samples*n_alts,)
+            Identifiers for the samples in long format.
+
+        isvars : list
+            Names of individual-specific variables in ``varnames``
+
+        weights : array-like, shape (n_variables,), default=None
+            Sample weights in long format.
+
+        avail: array-like, shape (n_samples*n_alts,), default=None
+            Availability of alternatives for the samples. One when
+            available or zero otherwise.
+
+        random_state : int, default=None
+            Random seed for numpy random generator
+
+        verbose : int, default=1
+            Verbosity of messages to show during estimation. 0: No messages,
+            1: Some messages, 2: All messages
+
+        return_proba : bool, default=False
+            If True, also return the choice probabilities
+
+        return_shares : bool, default=False
+            If True, also return the makert shares for the alternatives
+            
+
+        Returns
+        -------
+        choices : array-like, shape (n_samples, )
+            Chosen alternative for every sample in the dataset.
+
+        proba : array-like, shape (n_samples, n_alts), optional
+            Choice probabilities for each sample in the dataset. The 
+            alternatives are ordered (in the columns) as they appear
+            in ``self.alternatives``. Only provided if
+            `return_proba` is True.
+
+        shares : dict, optional
+            Choice frequency for each alternative. Only provided
+            if `return_shares` is True.
+        """
+        #=== 1. Preprocess inputs
+        # Handle array-like inputs by converting everything to numpy arrays
+        X, _, varnames, alts, isvars, ids, weights, _, avail = \
+            self._as_array(X, None, varnames, alts, isvars, ids, weights, None,
+                             avail)
+        self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
+       
+        betas, X, _, weights, avail, Xnames = \
+            self._setup_input_data(X, None, varnames, alts, ids, 
+                                   isvars=isvars, weights=weights, avail=avail,
+                                   init_coeff=self.coeff_,
+                                   random_state=random_state, verbose=verbose,
+                                   predict_mode=True)
+        
+        #=== 2. Compute choice probabilities
+        proba = self._compute_probabilities(betas, X, avail)  # (N,J)
+        
+        #=== 3. Compute choices
+        idx_max_proba = np.argmax(proba, axis=1)
+        choices = self.alternatives[idx_max_proba]
+        
+        #=== 4. Arrange output depending on requested information
+        output = (choices, )
+        if return_proba:
+            output += (proba, )
+        
+        if return_shares:
+            alt_list, counts = np.unique(choices, return_counts=True)
+            shares = dict(zip(list(alt_list),
+                              list(np.round(counts/np.sum(counts), 3))))
+            output += (shares, )
+        
+        _unpack_tuple = lambda x : x if len(x) > 1 else x[0]
+        
+        return _unpack_tuple(output) # Unpack before returning
+
+
+    def _setup_input_data(self, X, y, varnames, alts, ids, isvars=None,
+            weights=None, avail=None, base_alt=None, fit_intercept=False,
+            init_coeff=None, random_state=None, verbose=1, predict_mode=False):
         X, y, _ = self._arrange_long_format(X, y, ids, alts)
-        y = self._format_choice_var(y, alts)
+        y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
-        y = y.reshape(X.shape[0], X.shape[1])
+        y = y.reshape(X.shape[0], X.shape[1])  if not predict_mode else None
 
         if random_state is not None:
             np.random.seed(random_state)
+
+        if weights is not None:
+            weights = weights*(X.shape[0]/np.sum(weights))  # Normalize weights
 
         if avail is not None:
             avail = avail.reshape(X.shape[0], X.shape[1])
@@ -139,11 +254,8 @@ class MultinomialLogit(ChoiceModel):
             if len(init_coeff) != X.shape[1]:
                 raise ValueError("The size of initial_coeff must be: "
                                  + int(X.shape[1]))
-
-        # Call optimization routine
-        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail,
-                                                maxiter)
-        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
+        return betas, X, y, weights, avail, Xnames
+        
 
     def _compute_probabilities(self, betas, X, avail):
         """Compute classic logit-based probabilities."""

@@ -33,23 +33,23 @@ def test__validate_inputs():
     validate = model._validate_inputs
     with pytest.raises(ValueError):  # match between columns in X and varnames
         validate(X, y, alts, varnames=["a"], isvars=None, ids=ids,
-                 weights=None, base_alt=None, fit_intercept=True, maxiter=0)
+                 weights=None)
 
     with pytest.raises(ValueError):  # alts can't be None
         validate(X, y, None, varnames=varnames, isvars=None, ids=ids,
-                 weights=None, base_alt=None, fit_intercept=True, maxiter=0)
+                 weights=None)
 
     with pytest.raises(ValueError):  # varnames can't be None
         validate(X, y, alts, varnames=None, isvars=None, ids=ids,
-                 weights=None, base_alt=None, fit_intercept=True, maxiter=0)
+                 weights=None)
 
     with pytest.raises(ValueError):  # X dimensions
         validate(np.array([]), y, alts, varnames=None, isvars=None, ids=ids,
-                 weights=None, base_alt=None, fit_intercept=True, maxiter=0)
+                 weights=None)
 
     with pytest.raises(ValueError):  # y dimensions
         validate(X, np.array([]), alts, varnames=None, isvars=None, ids=ids,
-                 weights=None, base_alt=None, fit_intercept=True, maxiter=0)
+                 weights=None)
 
 def test__format_choice_var():
     """

@@ -32,6 +32,38 @@ def test_log_likelihood():
 
     assert pytest.approx(expected_loglik, obtained_loglik)
 
+def test_predict():
+    """
+    Computes predictions "by hand" for a simple example and ensures that the
+    probabilities returned by xlogit are the same
+    """
+    X_ = X.reshape(N, J, K)
+    betas = np.array([.1, .1])
+
+    #=== 1. Compute predictions using xlogit
+    model = MultinomialLogit()
+    model.alternatives =  np.array([1, 2])
+    model.coeff_ = betas
+    model._isvars, model._asvars, model._varnames = [], varnames, varnames
+    model._fit_intercept = False
+    model.coeff_names = np.array(["a", "b", "sd.a", "sd.b"])
+    ypred, proba, shares = model.predict(X, varnames, alts, ids,
+                                          return_proba=True,
+                                          return_shares=True)
+    
+    #=== 2. Compute predictions by hand
+    eXB = np.exp(X_.dot(betas))
+    expec_proba = eXB/np.sum(eXB, axis=1, keepdims=True)
+    expec_ypred = model.alternatives[np.argmax(expec_proba, axis=1)]
+    alt_list, counts = np.unique(expec_ypred, return_counts=True)
+    expec_shares = dict(zip(list(alt_list),
+                            list(np.round(counts/np.sum(counts), 3))))
+    #=== 3. Assert predictions are the same
+    assert np.allclose(expec_proba, proba)
+    assert np.array_equal(expec_ypred, ypred)
+    assert expec_shares == shares
+    
+
 
 def test__bfgs_optimization():
     """

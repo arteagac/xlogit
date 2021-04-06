@@ -73,22 +73,22 @@ class MixedLogit(ChoiceModel):
 
         Parameters
         ----------
-        X : array-like, shape (n_samples, n_variables)
+        X : array-like, shape (n_samples*n_alts, n_variables)
             Input data for explanatory variables in long format
 
-        y : array-like, shape (n_samples,)
+        y : array-like, shape (n_samples*n_alts,)
             Chosen alternatives or one-hot encoded representation
             of the choices
 
-        varnames : list, shape (n_variables,)
+        varnames : list-like, shape (n_variables,)
             Names of explanatory variables that must match the number and
             order of columns in ``X``
 
-        alts : array-like, shape (n_samples,)
+        alts : array-like, shape (n_samples*n_alts,)
             Alternative values in long format
 
-        ids : array-like, shape (n_samples,)
-            Identifiers for choice situations in long format.
+        ids : array-like, shape (n_samples*n_alts,)
+            Identifiers for the samples in long format.
 
         randvars : dict
             Names (keys) and mixing distributions (values) of variables that
@@ -96,17 +96,17 @@ class MixedLogit(ChoiceModel):
             distributions are: ``'n'``: normal, ``'ln'``: lognormal,
             ``'u'``: uniform, ``'t'``: triangular, ``'tn'``: truncated normal
 
-        isvars : list
+        isvars : list-like
             Names of individual-specific variables in ``varnames``
 
-        weights : array-like, shape (n_variables,), default=None
-            Weights for the choice situations in long format.
+        weights : array-like, shape (n_samples,), default=None
+            Sample weights in long format.
 
-        avail: array-like, shape (n_samples,), default=None
+        avail: array-like, shape (n_samples*n_alts,), default=None
             Availability of alternatives for the choice situations. One when
             available or zero otherwise.
 
-        panels : array-like, shape (n_samples,), default=None
+        panels : array-like, shape (n_samples*n_alts,), default=None
             Identifiers in long format to create panels in combination with
             ``ids``
 
@@ -146,16 +146,163 @@ class MixedLogit(ChoiceModel):
             = self._as_array(X, y, varnames, alts, isvars, ids, weights,
                              panels, avail)
 
-        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights,
-                              base_alt, fit_intercept, maxiter)
+        self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
+        
         self._pre_fit(alts, varnames, isvars, base_alt,
                       fit_intercept, maxiter)
 
+        betas, X, y, panel_info, draws, weights, avail, Xnames = \
+            self._setup_input_data(X, y, varnames, alts, ids, randvars, 
+                                   isvars=isvars, weights=weights, avail=avail,
+                                   panels=panels, init_coeff=init_coeff,
+                                   random_state=random_state, n_draws=n_draws,
+                                   halton=halton, verbose=verbose,
+                                   predict_mode=False)
+
+        optimizat_res = \
+            minimize(self._loglik_gradient, betas, jac=True, method='BFGS',
+                     args=(X, y, panel_info, draws, weights, avail), tol=1e-5,
+                     options={'gtol': 1e-4, 'maxiter': maxiter,
+                              'disp': verbose > 0})
+
+        coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
+
+        self._post_fit(optimizat_res, coef_names, X.shape[0], verbose)
+
+
+    def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
+                avail=None,  panels=None, random_state=None, n_draws=200,
+                halton=True, verbose=1, return_proba=False,
+                return_shares=False):
+        """Predict chosen alternatives.
+
+        Parameters
+        ----------
+        X : array-like, shape (n_samples*n_alts, n_variables)
+            Input data for explanatory variables in long format
+
+        varnames : list, shape (n_variables,)
+            Names of explanatory variables that must match the number and
+            order of columns in ``X``
+
+        alts : array-like, shape (n_samples*n_alts,)
+            Alternative values in long format
+
+        ids : array-like, shape (n_samples*n_alts,)
+            Identifiers for the samples in long format.
+
+        isvars : list
+            Names of individual-specific variables in ``varnames``
+
+        weights : array-like, shape (n_variables,), default=None
+            Sample weights in long format.
+
+        avail: array-like, shape (n_samples*n_alts,), default=None
+            Availability of alternatives for the samples. One when
+            available or zero otherwise.
+
+        panels : array-like, shape (n_samples*n_alts,), default=None
+            Identifiers in long format to create panels in combination with
+            ``ids``
+
+        random_state : int, default=None
+            Random seed for numpy random generator
+
+        n_draws : int, default=200
+            Number of random draws to approximate the mixing distributions of
+            the random coefficients
+
+        halton : bool, default=True
+            Whether the estimation uses halton draws.
+
+        verbose : int, default=1
+            Verbosity of messages to show during estimation. 0: No messages,
+            1: Some messages, 2: All messages
+        
+        return_proba : bool, default=False
+            If True, also return the choice probabilities
+
+        return_shares : bool, default=False
+            If True, also return the makert shares for the alternatives
+
+
+        Returns
+        -------
+        choices : array-like, shape (n_samples, )
+            Chosen alternative for every sample in the dataset.
+
+        proba : array-like, shape (n_samples, n_alts), optional
+            Choice probabilities for each sample in the dataset. The 
+            alternatives are ordered (in the columns) as they appear
+            in ``self.alternatives``. Only provided if
+            `return_proba` is True.
+
+        shares : dict, optional
+            Choice frequency for each alternative. Only provided
+            if `return_shares` is True.
+        """
+        # Handle array-like inputs by converting everything to numpy arrays
+        #=== 1. Preprocess inputs
+        X, _, varnames, alts, isvars, ids, weights, panels, avail\
+            = self._as_array(X, None, varnames, alts, isvars, ids, weights,
+                             panels, avail)
+        
+        self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
+        
+        betas, X, _, panel_info, draws, weights, avail, Xnames = \
+            self._setup_input_data(X, None, varnames, alts, ids, self.randvars, 
+                                   isvars=isvars, weights=weights, avail=avail,
+                                   panels=panels, init_coeff=self.coeff_,
+                                   random_state=random_state, n_draws=n_draws,
+                                   halton=halton, verbose=verbose,
+                                   predict_mode=True)
+            
+        coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
+        if not np.array_equal(coef_names, self.coeff_names):
+            raise ValueError("The provided 'varnames' yield coefficient names "
+                             "that are inconsistent with the stored "
+                             "'self.coeff_names'")
+        
+        betas = dev.to_gpu(betas) if dev.using_gpu else betas
+        
+        #=== 2. Compute choice probabilities
+        p = self._compute_probabilities(betas, X,
+                                        panel_info, draws, avail)  # (N,P,J,R)
+        
+        p = self._prob_product_across_panels(p, panel_info)  # (N,J,R)
+        proba = p.mean(axis=-1)   # (N,J)
+        if dev.using_gpu:
+            proba = dev.to_cpu(proba)
+        
+        #=== 3. Compute choices
+        idx_max_proba = np.argmax(proba, axis=1)
+        choices = self.alternatives[idx_max_proba]
+        
+        #=== 4. Arrange output depending on requested information
+        output = (choices, )
+        if return_proba:
+            output += (proba, )
+        
+        if return_shares:
+            alt_list, counts = np.unique(choices, return_counts=True)
+            shares = dict(zip(list(alt_list),
+                              list(np.round(counts/np.sum(counts), 3))))
+            output += (shares, )
+        
+        _unpack_tuple = lambda x : x if len(x) > 1 else x[0]
+        
+        return _unpack_tuple(output) # Unpack before returning
+ 
+    
+    def _setup_input_data(self, X, y, varnames, alts, ids, randvars,
+                          isvars=None, weights=None, avail=None, panels=None,
+                          init_coeff=None, random_state=None, n_draws=200,
+                          halton=True, verbose=1, predict_mode=False):
         if random_state is not None:
             np.random.seed(random_state)
 
         X, y, panels = self._arrange_long_format(X, y, ids, alts, panels)
-        y = self._format_choice_var(y, alts)
+        y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
         self._model_specific_validations(randvars, Xnames)
 
@@ -171,18 +318,11 @@ class MixedLogit(ChoiceModel):
 
         # Reshape arrays in the format required for the rest of the estimation
         X = X.reshape(N, P, J, K)
-        y = y.reshape(N, P, J, 1)
+        y = y.reshape(N, P, J, 1) if not predict_mode else None
 
+        if not predict_mode:
+            self._setup_randvars_info(randvars, Xnames)
         self.n_draws = n_draws
-        self.randvars = randvars
-        self._rvidx, self._rvdist = [], []
-        for var in Xnames:
-            if var in self.randvars.keys():
-                self._rvidx.append(True)
-                self._rvdist.append(self.randvars[var])
-            else:
-                self._rvidx.append(False)
-        self._rvidx = np.array(self._rvidx)
         self.verbose = verbose
 
         if weights is not None:
@@ -210,18 +350,21 @@ class MixedLogit(ChoiceModel):
             if avail is not None:
                 avail = dev.to_gpu(avail)
             if verbose > 0:
-                print("Estimation with GPU processing enabled.")
+                print("GPU processing enabled.")
+        return betas, X, y, panel_info, draws, weights, avail, Xnames
 
-        optimizat_res = \
-            minimize(self._loglik_gradient, betas, jac=True, method='BFGS',
-                     args=(X, y, panel_info, draws, weights, avail), tol=1e-5,
-                     options={'gtol': 1e-4, 'maxiter': maxiter,
-                              'disp': verbose > 0})
 
-        coeff_names = np.append(Xnames,
-                                np.char.add("sd.", Xnames[self._rvidx]))
+    def _setup_randvars_info(self, randvars, Xnames):
+        self.randvars = randvars
+        self._rvidx, self._rvdist = [], []
+        for var in Xnames:
+            if var in self.randvars.keys():
+                self._rvidx.append(True)
+                self._rvdist.append(self.randvars[var])
+            else:
+                self._rvidx.append(False)
+        self._rvidx = np.array(self._rvidx)
 
-        self._post_fit(optimizat_res, coeff_names, N, verbose)
 
     def _compute_probabilities(self, betas, X, panel_info, draws, avail):
         """Compute the standard logit-based probabilities.
@@ -245,7 +388,7 @@ class MixedLogit(ChoiceModel):
         sumeV[sumeV == 0] = 1e-30
         p = eV/sumeV  # (N,P,J,R)
         p = p*panel_info[:, :, None, None]  # Zero for unbalanced panels
-        return p
+        return p  # (N,P,J,R)
 
     def _loglik_gradient(self, betas, X, y, panel_info, draws, weights, avail):
         """Compute the log-likelihood and gradient.
@@ -300,14 +443,12 @@ class MixedLogit(ChoiceModel):
         gr_fb = np.concatenate((gr_f, gr_b), axis=1)[:, idx]
         return np.concatenate((gr_fb, gr_w), axis=1)
 
-    def _prob_product_across_panels(self, pch, panel_info):
+    def _prob_product_across_panels(self, prob, panel_info):
         if not np.all(panel_info):  # If panel unbalanced. Not all ones
-            idx = panel_info == 0
-            for i in range(pch.shape[2]):
-                pch[:, :, i][idx] = 1  # Multiply by one when unbalanced
-        pch = pch.prod(axis=1)  # (N,R)
-        pch[pch == 0] = 1e-30
-        return pch  # (N,R)
+            prob[panel_info==0, :] = 1  # Multiply by one when unbalanced
+        prob = prob.prod(axis=1)  # (N,R)
+        prob[prob == 0] = 1e-30
+        return prob  # (N,R)
 
     def _apply_distribution(self, betas_random):
         """Apply the mixing distribution to the random betas."""
@@ -333,21 +474,22 @@ class MixedLogit(ChoiceModel):
         P = np.max(p_obs)  # Panel length for all records
 
         if not np.all(p_obs[0] == p_obs):  # Balancing needed
-            y = y.reshape(X.shape[0], J, 1)
+            y = y.reshape(X.shape[0], J, 1) if y is not None else None
             Xbal, ybal = np.zeros((N*P, J, K)), np.zeros((N*P, J, 1))
             panel_info = np.zeros((N, P))
             cum_p = 0  # Cumulative sum of n_obs at every iteration
             for n, p in enumerate(p_obs):
                 # Copy data from original to balanced version
                 Xbal[n*P:n*P + p, :, :] = X[cum_p:cum_p + p, :, :]
-                ybal[n*P:n*P + p, :, :] = y[cum_p:cum_p + p, :, :]
+                ybal[n*P:n*P + p, :, :] = y[cum_p:cum_p + p, :, :] \
+                    if y is not None else None  # in predict mode
                 panel_info[n, :p] = np.ones(p)
                 cum_p += p
 
         else:  # No balancing needed
             Xbal, ybal = X, y
             panel_info = np.ones((N, P))
-
+        ybal = ybal if y is not None else None  # in predict mode
         return Xbal, ybal, panel_info
 
     def _compute_derivatives(self, betas, draws):
@@ -430,13 +572,13 @@ class MixedLogit(ChoiceModel):
     def _model_specific_validations(self, randvars, Xnames):
         """Conduct validations specific for mixed logit models."""
         if randvars is None:
-            raise ValueError("The randvars parameter is required for Mixed "
+            raise ValueError("The 'randvars' parameter is required for Mixed "
                              "Logit estimation")
         if not set(randvars.keys()).issubset(Xnames):
-            raise ValueError("Some variable names in randvars were not found "
-                             "in the list of variable names")
+            raise ValueError("Some variable names in 'randvars' were not "
+                             "found in the list of variable names")
         if not set(randvars.values()).issubset(["n", "ln", "t", "tn", "u"]):
-            raise ValueError("Wrong mixing distribution found in randvars. "
+            raise ValueError("Wrong mixing distribution found in 'randvars'. "
                              "Accepted distrubtions are n, ln, t, u, tn")
 
     def summary(self):

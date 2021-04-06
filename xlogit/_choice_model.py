@@ -61,14 +61,15 @@ class ChoiceModel(ABC):
         self._asvars = [v for v in varnames if v not in self._isvars]
         self._varnames = list(varnames)  # Easier to handle with lists
         self._fit_intercept = fit_intercept
-        self._alternatives = np.unique(alts)
-        self.base_alt = self._alternatives[0] if base_alt is None else base_alt
+        self.alternatives = np.sort(np.unique(alts))
+        self.base_alt = self.alternatives[0] if base_alt is None else base_alt
         self.maxiter = maxiter
 
     def _post_fit(self, optimization_res, coeff_names, sample_size, verbose=1):
         self.convergence = optimization_res['success']
         self.coeff_ = optimization_res['x']
         self.stderr = np.sqrt(np.diag(optimization_res['hess_inv']))
+        self.hess_inv = optimization_res['hess_inv']
         self.zvalues = self.coeff_/self.stderr
         self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=sample_size)
         self.loglikelihood = -optimization_res['fun']
@@ -91,7 +92,7 @@ class ChoiceModel(ABC):
         converting the isvars to a dummy representation that removes the base
         alternative.
         """
-        J = len(self._alternatives)
+        J = len(self.alternatives)
         N = int(len(X)/J)
         isvars = self._isvars.copy()
         asvars = self._asvars.copy()
@@ -112,7 +113,7 @@ class ChoiceModel(ABC):
             dummy = np.tile(np.eye(J), reps=(N, 1))
             # Remove base alternative
             dummy = np.delete(dummy,
-                              np.where(self._alternatives == self.base_alt)[0],
+                              np.where(self.alternatives == self.base_alt)[0],
                               axis=1)
             Xis = X[:, ispos]
             # Multiply dummy representation by the individual specific data
@@ -133,7 +134,7 @@ class ChoiceModel(ABC):
             X = Xis
 
         names = ["{}.{}".format(isvar, j) for isvar in isvars
-                 for j in self._alternatives if j != self.base_alt] + asvars
+                 for j in self.alternatives if j != self.base_alt] + asvars
         names = np.array(names)
 
         return X, names
@@ -182,14 +183,14 @@ class ChoiceModel(ABC):
                                'formats': ['<f4', '<f4', '<U64']})
         cols['panel'], cols['id'], cols['alt'] = pnls, ids, alts
         sorted_idx = np.argsort(cols, order=['panel', 'id', 'alt'])
-        X, y = X[sorted_idx], y[sorted_idx]
+        X = X[sorted_idx]
+        y = y[sorted_idx] if y is not None else None
         if panels is not None:
             panels = panels[sorted_idx]
         self._check_long_format_consistency(ids, alts, sorted_idx)
         return X, y, panels
 
-    def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights,
-                         base_alt, fit_intercept, maxiter):
+    def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights):
         """Validate potential mistakes in the input data."""
         if varnames is None:
             raise ValueError('The parameter varnames is required')
@@ -198,7 +199,7 @@ class ChoiceModel(ABC):
         if X.ndim != 2:
             raise ValueError("X must be an array of two dimensions in "
                              "long format")
-        if y.ndim != 1:
+        if y is not None and y.ndim != 1:
             raise ValueError("y must be an array of one dimension in "
                              "long format")
         if len(varnames) != X.shape[1]:

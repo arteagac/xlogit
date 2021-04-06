@@ -75,17 +75,58 @@ def test__transform_betas():
 
 def test_fit():
     """
-    Ensures the log-likelihood works for a single iterations with the default
+    Ensures the log-likelihood works for multiple iterations with the default
     initial coefficients. The value of -1.794 was computed by hand for
     comparison purposes
     """
     # There is no need to initialize a random seed as the halton draws produce
     # reproducible results
     model = MixedLogit()
-    model.fit(X, y, varnames=varnames, alts=alts, n_draws=10, panels=panels,
-              ids=ids, randvars=randvars, maxiter=0, verbose=0, halton=True)
+    model.fit(X, y, varnames, alts, ids, randvars, n_draws=10, panels=panels,
+              maxiter=0, verbose=0, halton=True)
 
     assert pytest.approx(model.loglikelihood, -1.79451632)
+    
+def test_predict():
+    """
+    Ensures that returned choice probabilities are consistent.
+    """
+    # There is no need to initialize a random seed as the halton draws produce
+    # reproducible results
+    P = 1  # Without panel data
+    betas = np.array([.1, .1, .1, .1])
+    X_ = X.reshape(N, P, J, K)
+    
+    model = MixedLogit()
+    model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
+    model.alternatives =  np.array([1, 2])
+    model.coeff_ = betas
+    model.randvars = randvars
+    model._isvars, model._asvars, model._varnames = [], varnames, varnames
+    model._fit_intercept = False
+    model.coeff_names = np.array(["a", "b", "sd.a", "sd.b"])
+    
+    #model.fit(X, y, varnames, alts, ids, randvars, verbose=0, halton=True)
+    y_pred, proba, shares = model.predict(X, varnames, alts, ids,
+                                          n_draws=R, return_proba=True,
+                                          return_shares=True)
+    
+    # Compute choice probabilities by hand
+    draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
+    Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
+    V = np.einsum('npjk,nkr -> npjr', X_, Br)
+    V[V > 700] = 700
+    eV = np.exp(V)
+    e_proba = eV/np.sum(eV, axis=2, keepdims=True)
+    expec_proba = e_proba.prod(axis=1).mean(axis=-1) 
+    expec_ypred = model.alternatives[np.argmax(expec_proba, axis=1)]
+    alt_list, counts = np.unique(expec_ypred, return_counts=True)
+    expec_shares = dict(zip(list(alt_list),
+                            list(np.round(counts/np.sum(counts), 3))))
+    
+
+    assert np.array_equal(expec_ypred, y_pred) 
+    assert expec_shares == shares
 
 
 def test_validate_inputs():

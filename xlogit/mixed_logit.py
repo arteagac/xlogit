@@ -173,7 +173,7 @@ class MixedLogit(ChoiceModel):
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
                 avail=None,  panels=None, random_state=None, n_draws=200,
                 halton=True, verbose=1, return_proba=False,
-                return_shares=False):
+                return_freq=False):
         """Predict chosen alternatives.
 
         Parameters
@@ -222,8 +222,8 @@ class MixedLogit(ChoiceModel):
         return_proba : bool, default=False
             If True, also return the choice probabilities
 
-        return_shares : bool, default=False
-            If True, also return the makert shares for the alternatives
+        return_freq : bool, default=False
+            If True, also return the frequency of the chosen the alternatives
 
 
         Returns
@@ -237,9 +237,9 @@ class MixedLogit(ChoiceModel):
             in ``self.alternatives``. Only provided if
             `return_proba` is True.
 
-        shares : dict, optional
+        freq : dict, optional
             Choice frequency for each alternative. Only provided
-            if `return_shares` is True.
+            if `return_freq` is True.
         """
         # Handle array-like inputs by converting everything to numpy arrays
         #=== 1. Preprocess inputs
@@ -283,11 +283,11 @@ class MixedLogit(ChoiceModel):
         if return_proba:
             output += (proba, )
         
-        if return_shares:
+        if return_freq:
             alt_list, counts = np.unique(choices, return_counts=True)
-            shares = dict(zip(list(alt_list),
-                              list(np.round(counts/np.sum(counts), 3))))
-            output += (shares, )
+            freq = dict(zip(list(alt_list),
+                            list(np.round(counts/np.sum(counts), 3))))
+            output += (freq, )
         
         _unpack_tuple = lambda x : x if len(x) > 1 else x[0]
         

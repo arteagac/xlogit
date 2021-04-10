@@ -136,7 +136,7 @@ class MultinomialLogit(ChoiceModel):
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
                 avail=None, random_state=None, verbose=1,
-                return_proba=False, return_shares=False):
+                return_proba=False, return_freq=False):
         """Predict chosen alternatives.
 
         Parameters
@@ -174,8 +174,8 @@ class MultinomialLogit(ChoiceModel):
         return_proba : bool, default=False
             If True, also return the choice probabilities
 
-        return_shares : bool, default=False
-            If True, also return the makert shares for the alternatives
+        return_freq : bool, default=False
+            If True, also return the choice frequency for the alternatives
             
 
         Returns
@@ -189,9 +189,9 @@ class MultinomialLogit(ChoiceModel):
             in ``self.alternatives``. Only provided if
             `return_proba` is True.
 
-        shares : dict, optional
+        freq : dict, optional
             Choice frequency for each alternative. Only provided
-            if `return_shares` is True.
+            if `return_freq` is True.
         """
         #=== 1. Preprocess inputs
         # Handle array-like inputs by converting everything to numpy arrays
@@ -219,11 +219,11 @@ class MultinomialLogit(ChoiceModel):
         if return_proba:
             output += (proba, )
         
-        if return_shares:
+        if return_freq:
             alt_list, counts = np.unique(choices, return_counts=True)
-            shares = dict(zip(list(alt_list),
-                              list(np.round(counts/np.sum(counts), 3))))
-            output += (shares, )
+            freq = dict(zip(list(alt_list),
+                            list(np.round(counts/np.sum(counts), 3))))
+            output += (freq, )
         
         _unpack_tuple = lambda x : x if len(x) > 1 else x[0]
         

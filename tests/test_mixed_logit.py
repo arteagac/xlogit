@@ -107,9 +107,9 @@ def test_predict():
     model.coeff_names = np.array(["a", "b", "sd.a", "sd.b"])
     
     #model.fit(X, y, varnames, alts, ids, randvars, verbose=0, halton=True)
-    y_pred, proba, shares = model.predict(X, varnames, alts, ids,
+    y_pred, proba, freq = model.predict(X, varnames, alts, ids,
                                           n_draws=R, return_proba=True,
-                                          return_shares=True)
+                                          return_freq=True)
     
     # Compute choice probabilities by hand
     draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
@@ -121,12 +121,12 @@ def test_predict():
     expec_proba = e_proba.prod(axis=1).mean(axis=-1) 
     expec_ypred = model.alternatives[np.argmax(expec_proba, axis=1)]
     alt_list, counts = np.unique(expec_ypred, return_counts=True)
-    expec_shares = dict(zip(list(alt_list),
-                            list(np.round(counts/np.sum(counts), 3))))
+    expec_freq = dict(zip(list(alt_list),
+                          list(np.round(counts/np.sum(counts), 3))))
     
 
     assert np.array_equal(expec_ypred, y_pred) 
-    assert expec_shares == shares
+    assert expec_freq == freq
 
 
 def test_validate_inputs():

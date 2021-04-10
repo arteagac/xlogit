@@ -76,7 +76,6 @@ class MultinomialLogit(ChoiceModel):
         alts : array-like, shape (n_samples*n_alts,)
             Alternative values in long format
 
-
         ids : array-like, shape (n_samples*n_alts,)
             Identifiers for the samples in long format.
 

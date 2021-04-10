@@ -89,16 +89,16 @@ def lrtest(general_model, restricted_model):
 
     Parameters
     ----------
-    general_model : ChoiceModel from xlogit package
-        The wide-format DataFrame.
+    general_model : xlogit Model
+        Fitted model that contains all parameters (unrestricted)
 
-    restricted_model : ChoiceModel from xlogit package
-        Column that uniquely identifies each sample.
+    restricted_model : xlogit Model
+        Fitted model with less parameters than ``general_model``.
 
     Returns
     -------
     lrtest_result : dict
-        p-value result and chisq statistic and degrees of freedom used in test
+        p-value result, chisq statistic, and degrees of freedom used in test
     """
     if len(general_model.coeff_) <= len(restricted_model.coeff_):
         raise ValueError("The general_model is expected to have less estimates"

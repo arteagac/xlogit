@@ -22,7 +22,7 @@ copyright = '2020, Cristian Arteaga'
 author = 'Cristian Arteaga'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.1'
+release = '0.1.2'
 
 
 # -- General configuration ---------------------------------------------------
@@ -49,7 +49,7 @@ exclude_patterns = ['_build', '**.ipynb_checkpoints']
 # The theme to use for HTML and HTML Help pages.  See the documentation for
 # a list of builtin themes.
 #
-html_theme = 'sphinx_rtd_theme'
+html_theme = 'sphinx_material'
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -57,5 +57,20 @@ html_theme = 'sphinx_rtd_theme'
 # html_static_path = ['_static']
 
 html_theme_options = {
-    'collapse_navigation': False,
+    'nav_title': 'xlogit',
+    'globaltoc_depth': 2,
+    'globaltoc_collapse': False,
+    'globaltoc_includehidden': False,
+    'color_primary': 'blue',
+    'color_accent': 'light-blue',
+    'repo_url': 'https://github.com/arteagac/xlogit/',
+    'repo_name': 'xlogit',
 }
+
+html_sidebars = {
+    "**": ["logo-text.html", "globaltoc.html", "localtoc.html",
+           "searchbox.html"]
+}
+
+
+autodoc_member_order = 'bysource'

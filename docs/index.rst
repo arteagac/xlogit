@@ -2,21 +2,24 @@
 
 
 .. toctree::
-   :caption: Getting Started
-   :maxdepth: 2
+   :maxdepth: 1
+   :titlesonly:
 
    install
-   examples
 
+.. toctree::
+   :maxdepth: 2
+
+   examples
 
 .. toctree::
    :maxdepth: 1
-   :caption: API Reference
 
    api/index
    
 .. toctree::
    :maxdepth: 1
+   :titlesonly:
    :caption: Misc Notes
    
    benchmark

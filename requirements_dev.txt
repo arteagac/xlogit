@@ -7,7 +7,7 @@ coveralls
 # For docs generation
 sphinx
 nbsphinx>=0.3.3
-sphinx-rtd-theme>=0.4.2
+sphinx-material>=0.0.32
 ipython
 pandas>=1.0
 numpy>=1.13.1

@@ -1,7 +1,10 @@
+# For CI and Style checking
 pytest-cov>=2.5.1
 pytest>=3.0.7
 flake8>=3.5.0
 coveralls
+
+# For docs generation
 sphinx
 nbsphinx>=0.3.3
 sphinx-rtd-theme>=0.4.2

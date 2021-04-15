@@ -342,7 +342,8 @@ class MixedLogit(ChoiceModel):
 
         # Move data to GPU if GPU is being used
         if dev.using_gpu:
-            X, y = dev.to_gpu(X), dev.to_gpu(y)
+            X = dev.to_gpu(X)
+            y = dev.to_gpu(y) if not predict_mode else None
             panel_info = dev.to_gpu(panel_info)
             draws = dev.to_gpu(draws)
             if weights is not None:

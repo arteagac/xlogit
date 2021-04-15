@@ -47,6 +47,7 @@ def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
         import pandas as pd
     except ImportError:
         raise ImportError("pandas installation required for reshaping data")
+    varying = varying if varying is not None else []
     
     # Validations
     if any(col in varying for col in dataframe.columns):
@@ -59,7 +60,7 @@ def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
     newdf[id_col] = np.repeat(dataframe[id_col].values, len(alt_list))
     newdf[alt_name] = np.tile(alt_list, len(dataframe))
     conc_cols = []
-    varying = varying if varying is not None else []
+    
     
     # Reshape columns that vary across alternatives
     patt = "{alt}{sep}{col}" if alt_is_prefix else "{col}{sep}{alt}"

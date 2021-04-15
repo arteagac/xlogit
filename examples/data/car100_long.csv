@@ -1,4 +1,4 @@
-person_id,choice_situation,choice,price,operating_cost,range,electric,gas,hybrid,high_performance,medium_performance
+indiv_id,choice_id,choice,price,op_cost,range,electric,gas,hybrid,high_perf,medium_perf
 1,1,0,46763,47.43,0,0,0,1,0,0
 1,1,1,57209,27.43,1.3,1,0,0,1,1
 1,1,0,87960,32.41,1.2,1,0,0,0,1

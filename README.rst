@@ -1,4 +1,3 @@
-==============================================================================
 xlogit: A Python package for GPU-accelerated estimation of mixed logit models.
 ==============================================================================
 
@@ -28,44 +27,49 @@ The current version of `xlogit` only supports input data in long format.
     # Read data from CSV file
     import pandas as pd
     df = pd.read_csv("examples/data/electricity_long.csv")
-    varnames = ["pf", "cl", "loc", "wk", "tod", "seas"]
-    X = df[varnames]
-    y = df['choice']
     
     # Fit the model with xlogit
     from xlogit import MixedLogit
+    
+    varnames = ['pf', 'cl', 'loc', 'wk', 'tod', 'seas']
     model = MixedLogit()
-    model.fit(X, y, 
-              varnames,
-              alts=df['alt'],
+    model.fit(X=df[varnames],
+              y=df['choice'],
+              varnames=varnames,
               ids=df['chid'],
               panels=df['id'],
-              randvars={'pf': 'n','cl':'n','loc':'n','wk':'n','tod':'n','seas':'n'}, 
-              n_draws=600)
+              alts=df['alt'],
+              n_draws=600,
+              randvars={'pf': 'n', 'cl': 'n', 'loc': 'n',
+                        'wk': 'n', 'tod': 'n', 'seas': 'n'})
     model.summary()
 
 
 ::
 
-    Estimation with GPU processing enabled.
+    GPU processing enabled.
     Optimization terminated successfully.
-    Estimation time= 5.2 seconds
-    ---------------------------------------------------------------------------
-    Coefficient              Estimate      Std.Err.         z-val         P>|z|
-    ---------------------------------------------------------------------------
-    pf                     -0.9996286     0.0331488   -30.1557541     9.98e-100 ***
-    cl                     -0.2355334     0.0220401   -10.6865870      1.97e-22 ***
-    loc                     2.2307891     0.1164263    19.1605300      5.64e-56 ***
-    wk                      1.6251657     0.0918755    17.6887855      6.85e-50 ***
-    tod                    -9.6067367     0.3112721   -30.8628296     2.36e-102 ***
-    seas                   -9.7892800     0.2913063   -33.6047603     2.81e-112 ***
-    sd.pf                   0.2357813     0.0181892    12.9627201      7.25e-31 ***
-    sd.cl                   0.4025377     0.0220183    18.2819903      2.43e-52 ***
-    sd.loc                  1.9262893     0.1187850    16.2166103      7.67e-44 ***
-    sd.wk                  -1.2192931     0.0944581   -12.9083017      1.17e-30 ***
-    sd.tod                  2.3354462     0.1741859    13.4077786      1.37e-32 ***
-    sd.seas                -1.4200913     0.2095869    -6.7756668       3.1e-10 ***
-    ---------------------------------------------------------------------------
+             Current function value: 3888.413414
+             Iterations: 46
+             Function evaluations: 51
+             Gradient evaluations: 51
+    Estimation time= 2.6 seconds
+    ----------------------------------------------------------------------
+    Coefficient         Estimate      Std.Err.         z-val         P>|z|
+    ----------------------------------------------------------------------
+    pf                -0.9996286     0.0331488   -30.1557541     9.98e-100 ***
+    cl                -0.2355334     0.0220401   -10.6865870      1.97e-22 ***
+    loc                2.2307891     0.1164263    19.1605300      5.64e-56 ***
+    wk                 1.6251657     0.0918755    17.6887855      6.85e-50 ***
+    tod               -9.6067367     0.3112721   -30.8628296     2.36e-102 ***
+    seas              -9.7892800     0.2913063   -33.6047603     2.81e-112 ***
+    sd.pf              0.2357813     0.0181892    12.9627201      7.25e-31 ***
+    sd.cl              0.4025377     0.0220183    18.2819903      2.43e-52 ***
+    sd.loc             1.9262893     0.1187850    16.2166103      7.67e-44 ***
+    sd.wk             -1.2192931     0.0944581   -12.9083017      1.17e-30 ***
+    sd.tod             2.3354462     0.1741859    13.4077786      1.37e-32 ***
+    sd.seas           -1.4200913     0.2095869    -6.7756668       3.1e-10 ***
+    ----------------------------------------------------------------------
     Significance:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     
     Log-Likelihood= -3888.413
@@ -120,7 +124,9 @@ The current version allows estimation of:
 - `Mixed Logit`_ with Halton draws
 - `Multinomial Logit`_ models
 - `Conditional logit <https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html>`_ models
-- Weighed regression for all of the logit-based models
+- Handling of unbalanced availability of choice alternatives for all of the supported models 
+- Post-estimation tools for prediction and specification testing
+- Inclusion of sample weights for all of the supported models
 
 Contact
 =======

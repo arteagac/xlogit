@@ -2,7 +2,7 @@
 xlogit: An Open-Source Python Package for GPU-Accelerated Estimation of Mixed Logit Models.
 ===========================================================================================
 
-|Travis| |Coverage| |Docs| |PyPi| |License|
+|Travis| |Coverage| |Community| |Docs| |PyPi| |License|
 
 .. _Mixed Logit: https://xlogit.readthedocs.io/en/latest/api/mixed_logit.html
 .. _Multinomial Logit: https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html
@@ -132,7 +132,7 @@ The current version allows estimation of:
 Contact
 =======
 
-If you have any questions, ideas to improve ``xlogit``, or want to report a bug, just open a `new issue in xlogit's GitHub repository <https://github.com/arteagac/xlogit/issues>`__ .
+If you have any questions, ideas to improve ``xlogit``, or want to report a bug, `chat with us on gitter <https://gitter.im/xlogit/community>`__ or open a `new issue in xlogit's GitHub repository <https://github.com/arteagac/xlogit/issues>`__.
 
 Citing ``xlogit``
 =================
@@ -156,6 +156,10 @@ Or using BibTex as follows::
 .. |Docs| image:: https://readthedocs.org/projects/xlogit/badge/?version=latest
    :target: https://xlogit.readthedocs.io/en/latest/?badge=latest
    :alt: Documentation Status
+
+.. |Community| image:: https://badges.gitter.im/xlogit/community.svg
+   :target: https://gitter.im/xlogit/community?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge
+   :alt: Community
 
 .. |Coverage| image:: https://coveralls.io/repos/github/arteagac/xlogit/badge.svg?branch=master
    :target: https://coveralls.io/github/arteagac/xlogit?branch=master

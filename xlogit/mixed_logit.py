@@ -329,7 +329,7 @@ class MixedLogit(ChoiceModel):
             weights = weights*(N/np.sum(weights))  # Normalize weights
 
         if avail is not None:
-            avail = avail.reshape(N, J)
+            avail = avail.reshape(N, P, J)
 
         # Generate draws
         draws = self._generate_draws(N, R, halton)  # (N,Kr,R)
@@ -383,7 +383,7 @@ class MixedLogit(ChoiceModel):
         eV = dev.np.exp(V)
 
         if avail is not None:
-            eV = eV*avail[:, None, :, None]  # Acommodate availablity of alts.
+            eV = eV*avail[:, :, :, None]  # Acommodate availablity of alts.
 
         sumeV = dev.np.sum(eV, axis=2, keepdims=True)
         sumeV[sumeV == 0] = 1e-30

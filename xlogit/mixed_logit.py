@@ -68,7 +68,7 @@ class MixedLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, 
             weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000,
-            random_state=None, n_draws=200, halton=True, verbose=1):
+            random_state=None, n_draws=500, halton=True, verbose=1):
         """Fit Mixed Logit models.
 
         Parameters
@@ -125,7 +125,7 @@ class MixedLogit(ChoiceModel):
         random_state : int, default=None
             Random seed for numpy random generator
 
-        n_draws : int, default=200
+        n_draws : int, default=500
             Number of random draws to approximate the mixing distributions of
             the random coefficients
 

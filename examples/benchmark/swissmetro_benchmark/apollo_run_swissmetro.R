@@ -18,7 +18,7 @@ apollo_initialise()
 apollo_control = list(
   modelName ="Apollo_MixedLogit_Swissmetro",
   modelDescr ="Mixed logit model on Swissmetro data",
-  indivID   ="custom_id",  
+  indivID   ="ID",  
   mixing    = TRUE, 
   nCores    = n_cores
 )
@@ -121,7 +121,7 @@ apollo_probabilities=function(apollo_beta, apollo_inputs, functionality="estimat
   P[['model']] = apollo_mnl(mnl_settings, functionality)
 
   ### Take product across observation for same individual
-  # P = apollo_panelProd(P, apollo_inputs, functionality)
+  P = apollo_panelProd(P, apollo_inputs, functionality)
 
   ### Average across inter-individual draws
   P = apollo_avgInterDraws(P, apollo_inputs, functionality)
@@ -160,3 +160,18 @@ log = function(msg){
 #     " LogLik", round(model$LLout, digits = 2)))
 #cat(paste("apollo", n_draws, n_cores, model$timeTaken, model$LLout, sep=","), 
 #file = "results/benchmark_results_apollo_biogeme.csv", sep="\n", append=TRUE)
+
+
+
+#LL(start)                        : -6922.021
+#LL(0)                            : -6964.663
+#LL(C)                            : -5864.998
+#LL(final)                        : -4360.036
+
+#Estimates:
+#             Estimate        s.e.   t.rat.(0)    Rob.s.e. Rob.t.rat.(0)
+#ASC_CAR        0.2809     0.05735       4.898      0.1094         2.567
+#ASC_TRAIN     -0.5762     0.08440      -6.826      0.1519        -3.792
+#B_CO          -1.6552     0.07775     -21.289      0.2924        -5.660
+#u_TT          -3.2119     0.20212     -15.891      0.2509       -12.804
+#sd_TT         -3.6557     0.18057     -20.246      0.2607       -14.022

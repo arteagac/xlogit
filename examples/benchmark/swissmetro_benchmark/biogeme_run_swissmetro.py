@@ -14,6 +14,7 @@ import biogeme.biogeme as bio
 import biogeme.models as models
 import biogeme.messaging as msg
 from biogeme.expressions import Beta, DefineVariable, bioDraws, log, MonteCarlo
+from biogeme.expressions import PanelLikelihoodTrajectory
 
 # Read the data
 df = pd.read_table("http://transp-or.epfl.ch/data/swissmetro.dat", sep="\t")
@@ -36,7 +37,7 @@ globals().update(database.variables)
 # Here we use the "biogeme" way for backward compatibility
 exclude = ((PURPOSE != 1) * (PURPOSE != 3) + (CHOICE == 0)) > 0
 database.remove(exclude)
-
+database.panel("ID")
 # Parameters to be estimated
 ASC_CAR = Beta('ASC_CAR', 0, None, None, 0)
 ASC_TRAIN = Beta('ASC_TRAIN', 0, None, None, 0)
@@ -89,8 +90,10 @@ av = {1: TRAIN_AV_SP,
 # Conditional to B_TIME_RND, we have a logit model (called the kernel)
 prob = models.logit(V, av, CHOICE)
 
+# Add Panel Structure
+pnl_prob = PanelLikelihoodTrajectory(prob)
 # We integrate over B_TIME_RND using Monte-Carlo
-logprob = log(MonteCarlo(prob))
+logprob = log(MonteCarlo(pnl_prob))
 
 # Define level of verbosity
 logger = msg.bioMessage()
@@ -111,3 +114,16 @@ biogeme.modelName = '05normalMixture'
 results = biogeme.estimate()
 pandasResults = results.getEstimatedParameters()
 print(pandasResults)
+
+"""
+OUTPUT: 
+ Log likelihood (N = 752):  -4359.414 Gradient norm:  0.01 Hessian norm: 7e+02 BHHH norm: 4e+03
+
+              Value   Std err     t-test       p-value  Rob. Std err  Rob. t-test  Rob. p-value
+ASC_CAR    0.283662  0.055212   5.137711  2.781055e-07      0.104448     2.715823  6.611133e-03
+ASC_TRAIN -0.573214  0.076517  -7.491366  6.816769e-14      0.135545    -4.228960  2.347746e-05
+B_COST    -1.649377  0.077663 -21.237650  0.000000e+00      0.293555    -5.618629  1.924789e-08
+B_TIME    -3.228652  0.156817 -20.588679  0.000000e+00      0.188068   -17.167489  0.000000e+00
+B_TIME_S   3.631337  0.160659  22.602749  0.000000e+00      0.216299    16.788485  0.000000e+00
+
+"""

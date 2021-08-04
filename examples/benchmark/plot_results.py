@@ -17,7 +17,7 @@ colors = ["#e1d95d", #yellow pylogit
           "#00b5aa", #lblue apollo
           ]
 
-markers = ['d', 's', 'X', 'x', 'o', '^', '|']
+markers = ['d', 's', 'X', 'x', 'o', '$V$', '^', '|']
 
 # ==========================================
 # pylogit and mlogit benchmark
@@ -30,13 +30,13 @@ libs = ['pylogit', 'mlogit', 'gmnl', 'xlogit', 'xlogit_gpu']
 def plot_memory_benchmark(dataset):
     dfe = df[df.dataset == dataset]
     plt.figure()
-    for i, lib in enumerate(libs):
+    for i, lib in enumerate(libs[:-1]):
         d = dfe[dfe.library == lib][["draws", "ram"]].values.T
         plt.plot(d[0], d[1], marker=markers[i], c=colors[i])
     d = dfe[dfe.library == "xlogit_gpu"][["draws", "gpu"]].values.T
     plt.plot(d[0], d[1], marker=markers[4], c=colors[4],
              linestyle="--")
-    plt.legend([i + " (RAM)" for i in libs] + ["xlogit_gpu (GPU)"])
+    plt.legend([i + " (RAM)" for i in libs[:-1]] + ["xlogit_gpu (GPU)"])
     plt.xlabel("Random draws")
     plt.ylabel("Memory usage (GB)")
     plt.title("Memory usage ("+dataset+" dataset)")

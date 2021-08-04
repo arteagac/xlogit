@@ -7,16 +7,24 @@ from tools import log
 matplotlib.rcParams.update({'font.size': 14,
                             'axes.spines.right': False,
                             'axes.spines.top': False})
-markers = ['d', 's', 'x', 'o', '^', '|']
-colors = ["#377eb8", "#4daf4a", "#ff7f00", "#e41a1c", "#984ea3",
-          "#a4c500"]
+colors = ["#e1d95d", #yellow pylogit
+          "#4daf4a", #green mlogit
+          "#377eb8", #blue gmnl          
+          "#ff7f00", #orange xlogit
+          "#e41a1c", #red    xlogit_gpu
+          "#984ea3",  #purple mixl 
+          "#a4c500", #lgreen biogeme
+          "#00b5aa", #lblue apollo
+          ]
+
+markers = ['d', 's', 'X', 'x', 'o', '^', '|']
 
 # ==========================================
 # pylogit and mlogit benchmark
 # ==========================================
 df = pd.read_csv("results/benchmark_results.csv")
 
-libs = ['pylogit', 'mlogit', 'xlogit', 'xlogit_gpu']
+libs = ['pylogit', 'mlogit', 'gmnl', 'xlogit', 'xlogit_gpu']
 
 
 def plot_memory_benchmark(dataset):
@@ -26,7 +34,7 @@ def plot_memory_benchmark(dataset):
         d = dfe[dfe.library == lib][["draws", "ram"]].values.T
         plt.plot(d[0], d[1], marker=markers[i], c=colors[i])
     d = dfe[dfe.library == "xlogit_gpu"][["draws", "gpu"]].values.T
-    plt.plot(d[0], d[1], marker=markers[3], c=colors[3],
+    plt.plot(d[0], d[1], marker=markers[4], c=colors[4],
              linestyle="--")
     plt.legend([i + " (RAM)" for i in libs] + ["xlogit_gpu (GPU)"])
     plt.xlabel("Random draws")
@@ -81,8 +89,8 @@ for lib in libs:
 
 
 def plot_time_benchmark_apollo_biogeme(df):
-    plt.figure(figsize=(8, 7))
-    for li, lib in enumerate(['apollo', 'biogeme']):
+    plt.figure(figsize=(10, 8))
+    for li, lib in enumerate(['apollo', 'biogeme', 'mixl']):
         for c, cores in enumerate(r_cores):
             idx = (df.library == lib) & (df.cores == cores)
             d = df[idx][["draws", "time"]].values.T
@@ -96,8 +104,8 @@ def plot_time_benchmark_apollo_biogeme(df):
             plt.plot(d[0], d[1], marker=markers[li], c=colors[li],
                      label=lib)
 
-    plt.legend(loc='upper center', bbox_to_anchor=(0.5, -0.11),
-               ncol=3)
+    plt.legend(#loc='right', #bbox_to_anchor=(0.5, -0.11),
+               ncol=1)
     plt.xlabel("Random draws")
     plt.ylabel("Time (Seconds)")
     plt.title("Estimation time (artificial dataset)")
@@ -107,6 +115,7 @@ def plot_time_benchmark_apollo_biogeme(df):
 
 
 plot_time_benchmark_apollo_biogeme(dfab)
+
 # ==========================================
 # comparison table
 # ==========================================
@@ -115,6 +124,7 @@ maxc = 64 if not mini else 4
 dfc = dfab.copy()
 dfc = dfc.drop(dfc[(dfc.library == "apollo") & (dfc.cores != maxc)].index)
 dfc = dfc.drop(dfc[(dfc.library == "biogeme") & (dfc.cores != maxc)].index)
+dfc = dfc.drop(dfc[(dfc.library == "mixl") & (dfc.cores != maxc)].index)
 dfc = dfc.drop(['cores', 'loglik'], axis=1)  # Keep only time
 # Reshape to have time as columns
 dfc = dfc.pivot(index='library', columns='draws', values='time')

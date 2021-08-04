@@ -48,19 +48,23 @@ profile_range_draws("python xlogit_run.py", r_draws, "artificial", True)
 profile_range_draws("python xlogit_run.py", r_draws, "artificial")
 profile_range_draws("python pylogit_run.py", r_draws, "artificial")
 profile_range_draws("Rscript mlogit_run.R", r_draws, "artificial")
+profile_range_draws("Rscript gmnl_run.R", r_draws, "artificial")
 profile_range_draws("python xlogit_run.py", r_draws, "electricity", True)
 profile_range_draws("python xlogit_run.py", r_draws, "electricity")
 profile_range_draws("python pylogit_run.py", r_draws, "electricity")
 profile_range_draws("Rscript mlogit_run.R", r_draws, "electricity")
+profile_range_draws("Rscript gmnl_run.R", r_draws, "electricity")
 
 # Print estimates
+n_draws = 1500
 log("\n\n********* ESTIMATES (COEFF AND STD.ERR.)*********")
-print_estimates("python xlogit_run.py", 400, "artificial")
-print_estimates("python pylogit_run.py", 400, "artificial")
-print_estimates("Rscript mlogit_run.R", 400, "artificial")
-print_estimates("python xlogit_run.py", 600, "electricity")
-print_estimates("python pylogit_run.py", 600, "electricity")
-print_estimates("Rscript mlogit_run.R", 600, "electricity")
+print_estimates("python xlogit_run.py", n_draws, "artificial")
+print_estimates("Rscript gmnl_run.R", n_draws, "artificial")
+print_estimates("Rscript mlogit_run.R", n_draws, "artificial")
+print_estimates("python xlogit_run.py", n_draws, "electricity")
+print_estimates("Rscript gmnl_run.R", n_draws, "electricity")
+print_estimates("Rscript mlogit_run.R", n_draws, "electricity")
+
 
 
 # ==========================================
@@ -77,8 +81,8 @@ profile_range_draws_and_cores("python biogeme_run.py", r_draws, r_cores)
 os.environ['OPENBLAS_NUM_THREADS'] = "1"  # Avoids segfault error
 profile_range_draws_and_cores("Rscript apollo_run.R", r_draws, r_cores)
 
-
 # ==========================================
 # plot results
 # ==========================================
 os.system("python plot_results.py"+" mini" if mini else "")
+

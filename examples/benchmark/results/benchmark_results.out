@@ -79,6 +79,25 @@ Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
   1500  174.80    -2278.19    2.82       0  TRUE
 
 
+=== artificial dataset. gmnl_run.R ===
+Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
+   100  116.95    -2278.83   0.318       0  TRUE
+   200  151.50    -2277.66   0.428       0  TRUE
+   300  185.10    -2279.31   0.523       0  TRUE
+   400  263.10    -2278.96   0.644       0  TRUE
+   500  291.50    -2278.80   0.735       0  TRUE
+   600  398.25    -2279.22    0.83       0  TRUE
+   700  356.50    -2278.53    0.96       0  TRUE
+   800  429.35    -2277.96    1.06       0  TRUE
+   900  428.65    -2278.35    1.18       0  TRUE
+  1000  441.30    -2277.84    1.27       0  TRUE
+  1100  596.65    -2278.55    1.38       0  TRUE
+  1200  660.35    -2278.30    1.48       0  TRUE
+  1300  797.90    -2278.65    1.61       0  TRUE
+  1400  737.10    -2278.17     1.7       0  TRUE
+  1500  803.00    -2278.39     1.8       0  TRUE
+
+
 === electricity dataset. xlogit_run.py(using GPU) ===
 Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
    100    1.07    -3941.19   0.424   0.079 True
@@ -155,114 +174,165 @@ Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
   1500   95.10    -3886.02    1.93       0  TRUE
 
 
+=== electricity dataset. gmnl_run.R ===
+Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
+   100  146.85    -3958.62   0.323       0
+   200  203.60    -3917.60   0.447       0
+   300  208.00    -3909.54   0.579       0
+   400  246.25    -3903.31   0.705       0
+   500  198.45    -3884.14   0.839       0
+   600  307.35    -3900.08   0.923       0
+   700  294.75    -3888.57   0.988       0
+   800  230.25    -3879.86    1.19       0
+   900  307.30    -3887.24    1.26       0
+  1000  422.35    -3889.31    1.36       0
+  1100  284.25    -3881.20    1.49       0
+  1200  317.00    -3885.44    1.57       0
+  1300  444.35    -3884.16    1.69       0
+  1400  440.70    -3884.14    1.81       0
+  1500  499.30    -3886.39    1.91       0
 
 ********* ESTIMATES (COEFF AND STD.ERR.)*********
 
 
 === artificial dataset. xlogit_run.py ===
 Variable    Estimate   Std.Err.
-price        -1.0619     0.1656
-time         -1.4946    0.16843
-conven       0.91915     0.1411
-comfort       1.1083    0.18099
-meals         1.7413    0.21099
-petfr         4.0055    0.39672
-emipp        -2.1052    0.23334
-nonsig1     0.067249    0.11996
-nonsig2      0.01504    0.13065
-nonsig3     0.036487    0.11255
-sd.meals     0.75911    0.23823
-sd.petfr      -1.373    0.28135
-sd.emipp      1.0502    0.14918
-Log.Lik:    -2276.98
+price         -1.032    0.15538
+time         -1.4596    0.16908
+conven       0.88957    0.14134
+comfort       1.0633    0.18257
+meals         1.7116    0.19664
+petfr         3.8753    0.37355
+emipp        -2.0164     0.2139
+nonsig1     0.072541    0.12688
+nonsig2     0.016026    0.13391
+nonsig3     0.018963    0.11309
+sd.meals    -0.68449     0.2368
+sd.petfr     -1.3225    0.31948
+sd.emipp       1.004    0.14202
+Log.Lik:    -2278.80
 
 
 === artificial dataset. pylogit_run.py ===
 Variable    Estimate   Std.Err.
-price        -1.0138    0.16632
-time         -1.4541    0.17349
-conven       0.87604    0.15086
-comfort        1.044    0.19221
-meals          1.688    0.20095
-petfr         3.8383    0.37926
-emipp        -1.9912    0.21361
-nonsig1     0.059764    0.14723
-nonsig2    0.0084302    0.15891
-nonsig3     0.026498    0.13485
-Sigma me     0.68083    0.24819
-Sigma pe     -1.2648    0.31522
-Sigma em    -0.99182    0.12685
-Log.Lik:    -2278.76
+price        -1.0736    0.18066
+time         -1.4964    0.19165
+conven        0.9153    0.16141
+comfort       1.1143    0.20837
+meals         1.7611    0.21843
+petfr         4.0164    0.44097
+emipp        -2.0897    0.24938
+nonsig1     0.070563    0.15245
+nonsig2     0.024856    0.16698
+nonsig3     0.029181     0.1429
+Sigma me     0.74248    0.27777
+Sigma pe      1.4761    0.34409
+Sigma em     -1.0257    0.14608
+Log.Lik:    -2277.75
+
+
+=== artificial dataset. gmnl_run.py ===
+Variable    Estimate   Std.Err.
+price       -1.05564  0.18524
+time        -1.48410  0.18710
+conven       0.90302  0.16033
+comfort      1.09055  0.20431
+nonsig1     0.068899  0.14782
+nonsig2     0.016192  0.15351
+nonsig3     0.025943  0.13580
+meals        1.73479  0.21841
+petfr        3.95920  0.42679
+emipp       -2.06443  0.24631
+sd.meals     0.73063  0.24845
+sd.petfr     1.39880  0.34122
+sd.emipp     1.02057  0.14709
+Log.Lik:    -2278.39
 
 
 === artificial dataset. mlogit_run.R ===
 Variable    Estimate   Std.Err.
-price       -1.03913  0.17571
-time        -1.47310  0.18578
-conven       0.89231  0.15708
-comfort      1.07091  0.20223
-meals        1.70202  0.21189
-petfr        3.90141  0.41815
-emipp       -2.03437  0.23517
-nonsig1     0.075277  0.14978
-nonsig2     0.016782  0.16349
-nonsig3     0.024581  0.13964
-sd.meals     0.72845  0.26569
-sd.petfr     1.30139  0.32885
-sd.emipp     1.01268  0.13871
-Log.Lik:    -2279.07
+price       -1.05165  0.17842
+time        -1.47965  0.18938
+conven       0.90123  0.15852
+comfort      1.08721  0.20581
+meals        1.73522  0.21418
+petfr        3.94550  0.42904
+emipp       -2.05865  0.24228
+nonsig1     0.069842  0.15112
+nonsig2      0.01653  0.16465
+nonsig3     0.025303  0.14071
+sd.meals     0.71356  0.27097
+sd.petfr     1.37873  0.35084
+sd.emipp     1.02518  0.14246
+Log.Lik:    -2278.19
 
 
 === electricity dataset. xlogit_run.py ===
 Variable    Estimate   Std.Err.
-pf          -0.99963   0.033149
-cl          -0.23553    0.02204
-loc           2.2308    0.11643
-wk            1.6252   0.091875
-tod          -9.6067    0.31127
-seas         -9.7893    0.29131
-sd.pf        0.23578   0.018189
-sd.cl        0.40254   0.022018
-sd.loc        1.9263    0.11878
-sd.wk        -1.2193   0.094458
-sd.tod        2.3354    0.17419
-sd.seas      -1.4201    0.20959
-Log.Lik:    -3888.41
+pf           -1.0054   0.034355
+cl          -0.23976   0.025775
+loc            2.285     0.1245
+wk             1.709    0.10095
+tod          -9.6837      0.321
+seas         -9.8213    0.30854
+sd.pf        0.23284   0.018376
+sd.cl        0.42235   0.025416
+sd.loc        1.8488    0.12043
+sd.wk         1.2422   0.090688
+sd.tod       -2.4835    0.21382
+sd.seas       1.5168    0.16555
+Log.Lik:    -3886.17
 
 
 === electricity dataset. pylogit_run.py ===
 Variable    Estimate   Std.Err.
-pf          -0.97433   0.027472
-cl          -0.22079   0.020926
-loc           2.2932    0.11891
-wk            1.5995   0.081315
-tod          -9.4823    0.24311
-seas          -9.541    0.22878
-Sigma pf     0.21355   0.015031
-Sigma cl    -0.39656   0.020272
-Sigma lo     -1.7354    0.11758
-Sigma wk      1.1149   0.079384
-Sigma to      2.4153    0.15498
-Sigma se     -1.5233    0.17035
-Log.Lik:    -3910.32
+pf           -1.0164    0.02959
+cl          -0.21977   0.024906
+loc           2.3084    0.14021
+wk            1.6984   0.099579
+tod          -9.6244    0.25299
+seas         -9.8427    0.24254
+Sigma pf    -0.22009   0.016793
+Sigma cl     0.42741   0.023596
+Sigma lo      1.8619    0.12786
+Sigma wk     -1.3012    0.09035
+Sigma to     -2.4657    0.17187
+Sigma se     -1.7141    0.18776
+Log.Lik:    -3885.28
 
 
 === electricity dataset. mlogit_run.R ===
 Variable    Estimate   Std.Err.
-pf          -0.99721  0.03617
-cl          -0.21968 0.014358
-loc          2.29018 0.089146
-wk           1.69432 0.071901
-tod         -9.67523  0.31172
-seas        -9.69618  0.31115
-sd.pf        0.22073 0.012669
-sd.cl        0.41155 0.020068
-sd.loc       1.78403  0.09744
-sd.wk        1.22962 0.083815
-sd.tod       2.27571  0.12571
-sd.seas      1.48622  0.13161
-Log.Lik:    -3888.47
+pf          -0.98903 0.036338
+cl          -0.22837 0.014686
+loc          2.27334  0.08964
+wk           1.64583 0.071921
+tod         -9.66856  0.31552
+seas        -9.74993  0.31611
+sd.pf        0.19878 0.013169
+sd.cl        0.40637 0.020247
+sd.loc       1.82151  0.10177
+sd.wk        1.25084 0.085302
+sd.tod       2.45936  0.13614
+sd.seas      1.63291  0.14421
+Log.Lik:    -3886.02
 
+
+=== electricity dataset. gmnl_run.R ===
+Variable    Estimate   Std.Err.
+pf          -1.00494 0.039086
+cl          -0.24237 0.025801
+loc          2.28375  0.13009
+wk           1.70404 0.097836
+tod         -9.63456  0.34459
+seas        -9.84208  0.33751
+sd.pf        0.23128 0.019264
+sd.cl        0.42031 0.025299
+sd.loc       1.84273  0.12343
+sd.wk        1.24593 0.096506
+sd.tod       2.51381  0.22649
+sd.seas      1.52712  0.16448
+Log.Lik:    -3886.39
 
 ********* APOLLO AND BIOGEME BENCHMARK *********
 

@@ -366,6 +366,20 @@ draws= 1500  cores= 32  time(s)= 701.43  LogLik -2278.02
 draws= 1500  cores= 64  time(s)= 415.78  LogLik -2278.02
 
 
+=== artificial dataset. mixl_run.R ===
+draws= 100  cores= 16  time(s)= 60.78  LogLik -2279.22
+draws= 100  cores= 32  time(s)= 54.15  LogLik -2279.22
+draws= 100  cores= 64  time(s)= 53.16  LogLik -2279.22
+draws= 500  cores= 16  time(s)= 311.42  LogLik -2278.6
+draws= 500  cores= 32  time(s)= 284.51  LogLik -2278.6
+draws= 500  cores= 64  time(s)= 280.95  LogLik -2278.6
+draws= 1000  cores= 16  time(s)= 618.16  LogLik -2278.85
+draws= 1000  cores= 32  time(s)= 553.67  LogLik -2278.85
+draws= 1000  cores= 64  time(s)= 543.05  LogLik -2278.85
+draws= 1500  cores= 16  time(s)= 1174.08  LogLik -2278.02
+draws= 1500  cores= 32  time(s)= 1090.11  LogLik -2278.02
+draws= 1500  cores= 64  time(s)= 1035.64  LogLik -2278.02
+
 
  ********* TABLE COMPARISON ESTIMATION TIME *********
  

@@ -80,6 +80,7 @@ log("\n\n********* APOLLO AND BIOGEME BENCHMARK *********")
 profile_range_draws_and_cores("python biogeme_run.py", r_draws, r_cores)
 os.environ['OPENBLAS_NUM_THREADS'] = "1"  # Avoids segfault error
 profile_range_draws_and_cores("Rscript apollo_run.R", r_draws, r_cores)
+profile_range_draws_and_cores("Rscript mixl_run.R", r_draws, r_cores)
 
 # ==========================================
 # plot results

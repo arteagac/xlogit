@@ -15,6 +15,8 @@ varnames = ["a", "b"]
 randvars = {'a': 'n', 'b': 'n'}
 N, J, K, R = 3, 2, 2, 5
 
+MIN_COMP_ZERO = 1e-300
+MAX_COMP_EXP = 700
 
 def test__balance_panels():
     """
@@ -115,7 +117,7 @@ def test_predict():
     draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
     Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
     V = np.einsum('npjk,nkr -> npjr', X_, Br)
-    V[V > 700] = 700
+    V[V > MAX_COMP_EXP] = MAX_COMP_EXP
     eV = np.exp(V)
     e_proba = eV/np.sum(eV, axis=2, keepdims=True)
     expec_proba = e_proba.prod(axis=1).mean(axis=-1) 

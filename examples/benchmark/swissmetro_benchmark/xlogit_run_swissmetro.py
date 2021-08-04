@@ -24,7 +24,7 @@ from xlogit import MixedLogit
 varnames=['ASC_CAR', 'ASC_TRAIN', 'CO', 'TT']
 model = MixedLogit()
 model.fit(X=df[varnames], y=df['CHOICE'], varnames=varnames,
-          alts=df['alt'], ids=df['custom_id'], #panels=df["ID"],
+          alts=df['alt'], ids=df['custom_id'], panels=df["ID"],
           avail=df['AV'], randvars={'TT': 'n'}, n_draws=2000)
 
 """

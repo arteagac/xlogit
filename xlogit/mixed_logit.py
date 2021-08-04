@@ -16,6 +16,8 @@ Notations
     K : Number of variables (Kf: fixed, Kr: random)
 """
 
+MIN_COMP_ZERO = 1e-300
+MAX_COMP_EXP = 700
 
 class MixedLogit(ChoiceModel):
     """Class for estimation of Mixed Logit Models.
@@ -379,14 +381,17 @@ class MixedLogit(ChoiceModel):
         XBf = dev.np.einsum('npjk,k -> npj', Xf, Bf)  # (N,P,J)
         XBr = dev.np.einsum('npjk,nkr -> npjr', Xr, Br)  # (N,P,J,R)
         V = XBf[:, :, :, None] + XBr  # (N,P,J,R)
-        V[V > 700] = 700
+        
+        #MAX_COMP_EXP = np.log(np.finfo(X.dtype).max)*.9  # ~700 for f64
+        V[V > MAX_COMP_EXP] = MAX_COMP_EXP
         eV = dev.np.exp(V)
 
         if avail is not None:
             eV = eV*avail[:, :, :, None]  # Acommodate availablity of alts.
 
         sumeV = dev.np.sum(eV, axis=2, keepdims=True)
-        sumeV[sumeV == 0] = 1e-30
+        #MIN_COMP_ZERO = np.finfo(X.dtype).max*.9  # ~1e-300 for float64
+        sumeV[sumeV == 0] = MIN_COMP_ZERO # 
         p = eV/sumeV  # (N,P,J,R)
         p = p*panel_info[:, :, None, None]  # Zero for unbalanced panels
         return p  # (N,P,J,R)
@@ -397,6 +402,7 @@ class MixedLogit(ChoiceModel):
         Fixed and random parameters are handled separately to
         speed up the estimation and the results are concatenated.
         """
+        betas = betas.astype(X.dtype)
         if dev.using_gpu:
             betas = dev.to_gpu(betas)
         p = self._compute_probabilities(betas, X, panel_info, draws, avail)
@@ -448,7 +454,8 @@ class MixedLogit(ChoiceModel):
         if not np.all(panel_info):  # If panel unbalanced. Not all ones
             prob[panel_info==0, :] = 1  # Multiply by one when unbalanced
         prob = prob.prod(axis=1)  # (N,R)
-        prob[prob == 0] = 1e-30
+        #MIN_COMP_ZERO = np.finfo(prob.dtype).max*.9  # ~1e-300 for float64
+        prob[prob == 0] = MIN_COMP_ZERO
         return prob  # (N,R)
 
     def _apply_distribution(self, betas_random):
@@ -496,7 +503,7 @@ class MixedLogit(ChoiceModel):
     def _compute_derivatives(self, betas, draws):
         """Compute the derivatives based on the mixing distributions."""
         N, R, Kr = draws.shape[0], draws.shape[2], self._rvidx.sum()
-        der = dev.np.ones((N, Kr, R))
+        der = dev.np.ones((N, Kr, R), dtype=draws.dtype)
         if any(set(self._rvdist).intersection(['ln', 'tn'])):
             _, betas_random = self._transform_betas(betas, draws)
             for k, dist in enumerate(self._rvdist):

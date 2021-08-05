@@ -10,12 +10,16 @@ def profile_range_draws(command, r_draws, dataset, usegpu=False):
     for r in r_draws:
         os.system(f"{command} {r} {dataset} {usegpu*1} prof")
 
+
 init_profiler_output_files()
-r_draws = range(1000, 6000, 1000)
-profile_range_draws("python xlogit_run.py", r_draws, "artificial", True)
+r_draws_gpu = [2000, 3000, 4000, 5000]
+r_draws = r_draws_gpu + [10000, 15000]
+profile_range_draws("python xlogit_run.py", r_draws_gpu, "artificial", True)
 profile_range_draws("python xlogit_run.py", r_draws, "artificial", False)
 
-profile_range_draws("python xlogit_run.py", r_draws, "electricity", True)
+r_draws_gpu = [2000, 3000, 4000, 5000, 7500]
+r_draws = r_draws_gpu + [10000, 15000, 20000]
+profile_range_draws("python xlogit_run.py", r_draws_gpu, "electricity", True)
 profile_range_draws("python xlogit_run.py", r_draws, "electricity", False)
 
 
@@ -33,11 +37,14 @@ markers = ['o', 'x']
 colors = ["#e41a1c", "#ff7f00"]
 lines = ['--', '-']
 
-df = pd.read_csv("results/benchmark_results.csv")
+df = pd.read_csv("results/many_draws_benchmark_results.csv")
 
 libs = ['xlogit_gpu', 'xlogit']
 datasets = ['artificial', 'electricity']
 memtypes = ["gpu", "ram"]
+
+xticks = {'artificial': [2000, 5000, 10000, 15000],
+           'electricity': [2000, 5000, 7500, 10000, 15000, 20000]}
 
 def plot_memory_benchmark(dataset):
     dfe = df[df.dataset == dataset]
@@ -52,9 +59,27 @@ def plot_memory_benchmark(dataset):
     plt.legend(leg)
     plt.xlabel("Random draws")
     plt.ylabel("Memory usage (GB)")
+    plt.xticks(xticks[dataset])
     plt.title(f"Memory usage of xlogit ({dataset} dataset)")
-    plt.savefig(f"results/gpu_memory_usage_xlogit_{dataset}.png", dpi=300)
+    plt.savefig(f"results/memory_many_draws_{dataset}", dpi=300)
     plt.show()
 
+def plot_time_benchmark(dataset):
+    dfe = df[df.dataset == dataset]
+    plt.figure()
+    for i, lib in enumerate(libs):
+        d = dfe[dfe.library == lib][["draws", "time"]].values.T
+        plt.plot(d[0], d[1], marker=markers[i], c=colors[i])
+    plt.legend(libs)
+    plt.xlabel("Random draws")
+    plt.ylabel("Time (Seconds)")
+    plt.xticks(xticks[dataset])
+    plt.title("Estimation time ("+dataset+" dataset)")
+    plt.savefig(f"results/time_many_draws_{dataset}", dpi=300)
+    plt.show()
+    
 plot_memory_benchmark("electricity")
 plot_memory_benchmark("artificial")
+plot_time_benchmark("electricity")
+plot_time_benchmark("artificial")
+

@@ -70,7 +70,8 @@ class MixedLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, 
             weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000,
-            random_state=None, n_draws=500, halton=True, verbose=1):
+            random_state=None, n_draws=500, halton=True, verbose=1,
+            batch_size=None):
         """Fit Mixed Logit models.
 
         Parameters
@@ -152,6 +153,10 @@ class MixedLogit(ChoiceModel):
         
         self._pre_fit(alts, varnames, isvars, base_alt,
                       fit_intercept, maxiter)
+        if batch_size is None:
+            batch_size = n_draws
+        else:
+            batch_size = n_draws if n_draws < batch_size else batch_size
 
         betas, X, y, panel_info, draws, weights, avail, Xnames = \
             self._setup_input_data(X, y, varnames, alts, ids, randvars, 
@@ -163,7 +168,7 @@ class MixedLogit(ChoiceModel):
 
         optimizat_res = \
             minimize(self._loglik_gradient, betas, jac=True, method='BFGS',
-                     args=(X, y, panel_info, draws, weights, avail), tol=1e-5,
+                     args=(X, y, panel_info, draws, weights, avail, batch_size), tol=1e-5,
                      options={'gtol': 1e-4, 'maxiter': maxiter,
                               'disp': verbose > 0})
 
@@ -347,7 +352,7 @@ class MixedLogit(ChoiceModel):
             X = dev.to_gpu(X)
             y = dev.to_gpu(y) if not predict_mode else None
             panel_info = dev.to_gpu(panel_info)
-            draws = dev.to_gpu(draws)
+            #draws = dev.to_gpu(draws)
             if weights is not None:
                 weights = dev.to_gpu(weights)
             if avail is not None:
@@ -378,8 +383,8 @@ class MixedLogit(ChoiceModel):
         Xf = X[:, :, :, ~self._rvidx]  # Data for fixed coefficients
         Xr = X[:, :, :, self._rvidx]   # Data for random coefficients
 
-        XBf = dev.np.einsum('npjk,k -> npj', Xf, Bf)  # (N,P,J)
-        XBr = dev.np.einsum('npjk,nkr -> npjr', Xr, Br)  # (N,P,J,R)
+        XBf = dev.cust_einsum('npjk,k -> npj', Xf, Bf)  # (N,P,J)
+        XBr = dev.cust_einsum('npjk,nkr -> npjr', Xr, Br)  # (N,P,J,R)
         V = XBf[:, :, :, None] + XBr  # (N,P,J,R)
         
         #MAX_COMP_EXP = np.log(np.finfo(X.dtype).max)*.9  # ~700 for f64
@@ -396,7 +401,8 @@ class MixedLogit(ChoiceModel):
         p = p*panel_info[:, :, None, None]  # Zero for unbalanced panels
         return p  # (N,P,J,R)
 
-    def _loglik_gradient(self, betas, X, y, panel_info, draws, weights, avail):
+    def _loglik_gradient(self, betas, X, y, panel_info, draws, weights, avail,
+                         batch_size):
         """Compute the log-likelihood and gradient.
 
         Fixed and random parameters are handled separately to
@@ -405,45 +411,82 @@ class MixedLogit(ChoiceModel):
         betas = betas.astype(X.dtype)
         if dev.using_gpu:
             betas = dev.to_gpu(betas)
-        p = self._compute_probabilities(betas, X, panel_info, draws, avail)
-        # Probability of chosen alt
-        pch = (y*p).sum(axis=2)  # (N,P,R)
-        pch = self._prob_product_across_panels(pch, panel_info)  # (N,R)
+        
+        N, R = X.shape[0],  draws.shape[-1]
+        Kf, Kr = np.sum(~self._rvidx), np.sum(self._rvidx)
+        n_batches = R//batch_size + 1 if draws.shape[-1] != batch_size else 1
+        gr_f, pch = np.zeros((N, Kf)), []
+        gr_b, gr_w =  np.zeros((N, Kr)), np.zeros((N, Kr))
 
+        for batch in range(n_batches):
+            draws_batch = draws[:, :, batch*batch_size: batch*batch_size + batch_size]
+            if dev.using_gpu:
+                draws_batch = dev.to_gpu(draws_batch)
+            p = self._compute_probabilities(betas, X, panel_info, draws_batch,
+                                            avail)
+
+            # Probability of chosen alt
+            pch_batch = (y*p).sum(axis=2)  # (N,P,R)
+            pch_batch = self._prob_product_across_panels(pch_batch, panel_info)  # (N,R)
+    
+   
+            # Gradient
+            Xf = X[:, :, :, ~self._rvidx]
+            Xr = X[:, :, :, self._rvidx]
+    
+            ymp = y - p  # (N,P,J,R)
+            # Gradient for fixed and random params
+            gr_f_batch = dev.cust_einsum('npjr,npjk -> nkr', ymp, Xf)
+            der = self._compute_derivatives(betas, draws_batch)
+            gr_b_batch = dev.cust_einsum('npjr,npjk -> nkr', ymp, Xr)*der
+            gr_w_batch = dev.cust_einsum('npjr,npjk -> nkr', ymp, Xr)*der*draws_batch
+
+            gr_f_batch = (gr_f_batch*pch_batch[:, None, :]).sum(axis=-1) # (N,K,R)*(N,1,R)
+            gr_b_batch = (gr_b_batch*pch_batch[:, None, :]).sum(axis=-1)
+            gr_w_batch = (gr_w_batch*pch_batch[:, None, :]).sum(axis=-1)
+
+            
+            #Save batch results
+            if dev.using_gpu:
+                gr_f_batch, gr_b_batch, gr_w_batch = dev.to_cpu(gr_f_batch), dev.to_cpu(gr_b_batch), dev.to_cpu(gr_w_batch)
+                pch_batch = dev.to_cpu(pch_batch)
+
+            # Accumulate to later compute mean
+            #if np.sum(~self._rvidx) > 0:
+            gr_f += gr_f_batch
+            gr_b += gr_b_batch
+            gr_w += gr_w_batch
+
+            pch.append(pch_batch)
+            draws_batch, p, der, ymp = None, None, None, None
+            
+        pch = np.concatenate(pch, axis=-1) 
         # Log-likelihood
         lik = pch.mean(axis=1)  # (N,)
-        loglik = dev.np.log(lik)
-        if weights is not None:
-            loglik = loglik*weights
-        loglik = loglik.sum()
+        
+        gr_f = (gr_f/R)/lik[:, None]
+        gr_b = (gr_b/R)/lik[:, None]
+        gr_w = (gr_w/R)/lik[:, None]
 
-        # Gradient
-        Xf = X[:, :, :, ~self._rvidx]
-        Xr = X[:, :, :, self._rvidx]
-
-        ymp = y - p  # (N,P,J,R)
-        # Gradient for fixed and random params
-        gr_f = dev.np.einsum('npjr,npjk -> nkr', ymp, Xf)
-        der = self._compute_derivatives(betas, draws)
-        gr_b = dev.np.einsum('npjr,npjk -> nkr', ymp, Xr)*der
-        gr_w = dev.np.einsum('npjr,npjk -> nkr', ymp, Xr)*der*draws
-        # Multiply gradient by the chose prob. and dived by mean chose prob.
-        gr_f = (gr_f*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kf)
-        gr_b = (gr_b*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kr)
-        gr_w = (gr_w*pch[:, None, :]).mean(axis=2)/lik[:, None]  # (N,Kr)
         # Put all gradients in a single array and aggregate them
         grad = self._concat_gradients(gr_f, gr_b, gr_w)  # (N,K)
         if weights is not None:
             grad = grad*weights[:, None]
         grad = grad.sum(axis=0)  # (K,)
-
-        if dev.using_gpu:
-            grad, loglik = dev.to_cpu(grad), dev.to_cpu(loglik)
+        #print([grad.shape, lik.shape])
+        # Log-likelihood
+        loglik = np.log(lik)
+        if weights is not None:
+            loglik = loglik*weights
+        loglik = loglik.sum()
+        
+        #if dev.using_gpu:
+        #    grad, loglik = dev.to_cpu(grad), dev.to_cpu(loglik)
         self.total_fun_eval += 1
         if self.verbose > 1:
-            print("Evaluation {}  Log-Lik.={:.2f}".format(self.total_fun_eval,
-                                                          -loglik))
-        return -loglik, -grad
+            print("Evaluation {}"
+                  "Log-Lik.={:.2f}".format(self.total_fun_eval, -loglik))
+        return -loglik.reshape(-1), -grad.reshape(-1)
 
     def _concat_gradients(self, gr_f, gr_b, gr_w):
         idx = np.append(np.where(~self._rvidx)[0], np.where(self._rvidx)[0])

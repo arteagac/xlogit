@@ -605,10 +605,21 @@ class MixedLogit(ChoiceModel):
         def halton_seq(length, prime=3, shuffled=False, drop=100):
             h = np.array([.0])
             t = 0
+            h_max = length + drop
             while len(h) < length + drop:
                 t += 1
-                h = np.append(h, np.tile(h, prime-1) +
-                              np.repeat(np.arange(1, prime)/prime**t, len(h)))
+                predhl = len(h) + len(h)*(prime-1)
+                if predhl <= h_max:
+                    h = np.concatenate((h, np.tile(h, prime-1) + np.repeat(np.arange(1, prime), len(h))/prime**t))
+                else:
+                    htemp = []
+                    req_len = h_max - len(h)
+                    n_steps = np.ceil(req_len/len(h)).astype(int) 
+                    for i in range(n_steps):
+                        max_l = min(len(h), req_len)
+                        htemp.append(h[:max_l] + np.repeat(i+1, max_l)/prime**t)
+                    h = np.concatenate((h, np.concatenate(htemp)))
+        
             seq = h[drop:length+drop]
             if shuffled:
                 np.random.shuffle(seq)

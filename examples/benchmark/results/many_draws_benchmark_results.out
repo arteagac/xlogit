@@ -37,3 +37,14 @@ Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
  10000  256.97    -3880.52   7.130   0.000 True
  15000  393.73    -3878.77  10.452   0.000 True
  20000  456.83    -3878.42  14.247   0.000 True
+ 
+ 
+ === artificial dataset. xlogit_run_batch.py ===
+Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
+ 25000  814.30    -2278.24   9.156   0.000 True
+ 50000 1748.64    -2278.24  14.974   0.000 True
+
+=== electricity dataset. xlogit_run_batch.py ===
+Ndraws Time(s) Log-Likeli. RAM(GB) GPU(GB) Converg.
+250000 3901.01    -3878.55  10.241   0.000 True
+500000 7873.63    -3878.75  14.988   0.000 True

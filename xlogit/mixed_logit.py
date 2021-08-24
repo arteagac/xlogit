@@ -130,6 +130,8 @@ class MixedLogit(ChoiceModel):
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
 
+        batch_size : int, default=None
+            Size of batches of random draws used to avoid overflowing memory during computations.
 
         Returns
         -------
@@ -161,7 +163,7 @@ class MixedLogit(ChoiceModel):
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
-                n_draws=200, halton=True, verbose=1, return_proba=False, return_freq=False, batch_size=None):
+                n_draws=200, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False):
         """Predict chosen alternatives.
 
         Parameters
@@ -201,7 +203,10 @@ class MixedLogit(ChoiceModel):
 
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
-        
+
+        batch_size : int, default=None
+            Size of batches of random draws used to avoid overflowing memory during computations.
+            
         return_proba : bool, default=False
             If True, also return the choice probabilities
 
@@ -563,27 +568,31 @@ class MixedLogit(ChoiceModel):
     def _get_halton_draws(self, sample_size, n_draws, n_vars, shuffled=False):
         """Generate halton draws between 0 and 1."""
         primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 71, 73, 79, 83, 89, 97, 101, 103,
-                  107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199]
-
-        def halton_seq(length, prime=3, shuffled=False, drop=100):
-            h = np.array([.0])
-            t = 0
-            h_max = length + drop
-            while len(h) < length + drop:
-                t += 1
-                predhl = len(h) + len(h)*(prime-1)
-                if predhl <= h_max:
-                    h = np.concatenate((h, np.tile(h, prime-1) + np.repeat(np.arange(1, prime), len(h))/prime**t))
-                else:
-                    htemp = []
-                    req_len = h_max - len(h)
-                    n_steps = np.ceil(req_len/len(h)).astype(int) 
-                    for i in range(n_steps):
-                        max_l = min(len(h), req_len)
-                        htemp.append(h[:max_l] + np.repeat(i+1, max_l)/prime**t)
-                    h = np.concatenate((h, np.concatenate(htemp)))
+                  107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
+                  211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313]
         
-            seq = h[drop:length+drop]
+        def halton_seq(length, prime=3, shuffled=False, drop=100):
+            """Generates a halton sequence while handling memory efficiently.
+            
+            Memory is efficiently handled by creating a single array ``seq`` that is iteratively filled without using
+            intermidiate arrays.
+            """
+            req_length = length + drop
+            seq = np.empty(req_length)
+            seq[0] = 0
+            seq_idx = 1
+            t=1
+            while seq_idx < req_length:
+                d = 1/prime**t
+                seq_size = seq_idx
+                i = 1
+                while i < prime and seq_idx < req_length:
+                    max_seq = min(req_length - seq_idx, seq_size)
+                    seq[seq_idx: seq_idx+max_seq] = seq[:max_seq] + d*i
+                    seq_idx += max_seq
+                    i += 1
+                t += 1
+            seq = seq[drop:length+drop]
             if shuffled:
                 np.random.shuffle(seq)
             return seq

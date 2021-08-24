@@ -6,7 +6,7 @@ to make sure all the requirments are satisfied.
 import os
 from tools import init_profiler_output_files, log
 import sys
-# sys.path.append("../../")  # Path of xlogit library root folder.
+sys.path.append("../../")  # Path of xlogit library root folder.
 from xlogit import MixedLogit
 
 MixedLogit.check_if_gpu_available()
@@ -44,13 +44,13 @@ else:
 
 # Run profiling
 log("\n\n********* PYLOGIT AND MLOGIT BENCHMARK *********")
-profile_range_draws("python xlogit_run.py", r_draws, "artificial", True)
-profile_range_draws("python xlogit_run.py", r_draws, "artificial")
+profile_range_draws("python xlogit_run_batch.py", r_draws, "artificial", True)
+profile_range_draws("python xlogit_run_batch.py", r_draws, "artificial")
 profile_range_draws("python pylogit_run.py", r_draws, "artificial")
 profile_range_draws("Rscript mlogit_run.R", r_draws, "artificial")
 profile_range_draws("Rscript gmnl_run.R", r_draws, "artificial")
-profile_range_draws("python xlogit_run.py", r_draws, "electricity", True)
-profile_range_draws("python xlogit_run.py", r_draws, "electricity")
+profile_range_draws("python xlogit_run_batch.py", r_draws, "electricity", True)
+profile_range_draws("python xlogit_run_batch.py", r_draws, "electricity")
 profile_range_draws("python pylogit_run.py", r_draws, "electricity")
 profile_range_draws("Rscript mlogit_run.R", r_draws, "electricity")
 profile_range_draws("Rscript gmnl_run.R", r_draws, "electricity")

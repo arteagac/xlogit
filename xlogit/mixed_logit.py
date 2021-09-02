@@ -68,7 +68,7 @@ class MixedLogit(ChoiceModel):
         self._rvdist = None  # List of mixing distributions of rand vars
 
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
-            base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=500,
+            base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
             halton=True, verbose=1, batch_size=None):
         """Fit Mixed Logit models.
 
@@ -163,7 +163,7 @@ class MixedLogit(ChoiceModel):
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
-                n_draws=200, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False):
+                n_draws=1000, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False):
         """Predict chosen alternatives.
 
         Parameters

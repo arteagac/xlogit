@@ -142,10 +142,10 @@ class MixedLogit(ChoiceModel):
         tol_opts : dict, default=None
             Options for tolerance of optimization routine. The dictionary accepts the following options (keys):
 
-                ftol : float
+                ftol : float, default=1e-10
                     Tolerance for objective function (log-likelihood)
                 
-                gtol : float
+                gtol : float, default=1e-5
                     Tolerance for gradient function.
 
         verbose : int, default=1
@@ -173,7 +173,7 @@ class MixedLogit(ChoiceModel):
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
                                    halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts)
 
-        tol = {'ftol': 1e-5, 'gtol': 1e-4}
+        tol = {'ftol': 1e-10, 'gtol': 1e-4}
         if tol_opts is not None:
             tol.update(tol_opts)
 

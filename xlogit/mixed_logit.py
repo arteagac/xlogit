@@ -69,7 +69,7 @@ class MixedLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
-            halton=True, verbose=1, batch_size=None, halton_opts=None):
+            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None):
         """Fit Mixed Logit models.
 
         Parameters
@@ -139,6 +139,15 @@ class MixedLogit(ChoiceModel):
                 primes : list
                     List of primes to be used as base for generation of Halton sequences.
 
+        tol_opts : dict, default=None
+            Options for tolerance of optimization routine. The dictionary accepts the following options (keys):
+
+                ftol : float
+                    Tolerance for objective function (log-likelihood)
+                
+                gtol : float
+                    Tolerance for gradient function.
+
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
 
@@ -164,10 +173,14 @@ class MixedLogit(ChoiceModel):
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
                                    halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts)
 
+        tol = {'ftol': 1e-5, 'gtol': 1e-4}
+        if tol_opts is not None:
+            tol.update(tol_opts)
+
         optimizat_res = \
-            minimize(self._loglik_gradient, betas, jac=True, method='BFGS', tol=1e-5,
+            minimize(self._loglik_gradient, betas, jac=True, method='BFGS', tol=tol['ftol'],
                      args=(X, y, panel_info, draws, weights, avail, batch_size), 
-                     options={'gtol': 1e-4, 'maxiter': maxiter, 'disp': verbose > 0})
+                     options={'gtol': tol['gtol'], 'maxiter': maxiter, 'disp': verbose > 0})
 
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 

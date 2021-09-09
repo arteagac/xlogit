@@ -69,7 +69,7 @@ class MixedLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
-            halton=True, verbose=1, batch_size=None):
+            halton=True, verbose=1, batch_size=None, halton_opts=None):
         """Fit Mixed Logit models.
 
         Parameters
@@ -126,6 +126,18 @@ class MixedLogit(ChoiceModel):
 
         halton : bool, default=True
             Whether the estimation uses halton draws.
+            
+        halton_opts : dict, default=None
+            Options for generation of halton draws. The dictionary accepts the following options (keys):
+
+                shuffle : bool, default=False
+                    Whether the Halton draws should be shuffled
+                
+                drop : int, default=100
+                    Number of initial Halton draws to discard to minimize correlations between Halton sequences
+                
+                primes : list
+                    List of primes to be used as base for generation of Halton sequences.
 
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
@@ -150,7 +162,7 @@ class MixedLogit(ChoiceModel):
         betas, X, y, panel_info, draws, weights, avail, Xnames = \
             self._setup_input_data(X, y, varnames, alts, ids, randvars, isvars=isvars, weights=weights, avail=avail,
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
-                                   halton=halton, verbose=verbose, predict_mode=False)
+                                   halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts)
 
         optimizat_res = \
             minimize(self._loglik_gradient, betas, jac=True, method='BFGS', tol=1e-5,
@@ -163,7 +175,8 @@ class MixedLogit(ChoiceModel):
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
-                n_draws=1000, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False):
+                n_draws=1000, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False,
+                halton_opts=None):
         """Predict chosen alternatives.
 
         Parameters
@@ -200,6 +213,18 @@ class MixedLogit(ChoiceModel):
 
         halton : bool, default=True
             Whether the estimation uses halton draws.
+            
+        halton_opts : dict, default=None
+            Options for generation of Halton draws. The dictionary accepts the following options (keys):
+            
+                shuffle : bool, default=False
+                    Whether the Halton draws should be shuffled
+                
+                drop : int, default=100
+                    Number of initial Halton draws to discard to minimize correlations between Halton sequences
+                
+                primes : list
+                    List of primes to be used as base for generation of Halton sequences.
 
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
@@ -236,7 +261,8 @@ class MixedLogit(ChoiceModel):
         betas, X, _, panel_info, draws, weights, avail, Xnames = \
             self._setup_input_data(X, None, varnames, alts, ids, self.randvars,  isvars=isvars, weights=weights,
                                    avail=avail, panels=panels, init_coeff=self.coeff_, random_state=random_state,
-                                   n_draws=n_draws, halton=halton, verbose=verbose, predict_mode=True)
+                                   n_draws=n_draws, halton=halton, verbose=verbose, predict_mode=True,
+                                   halton_opts=halton_opts)
         
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
         if not np.array_equal(coef_names, self.coeff_names):
@@ -285,10 +311,9 @@ class MixedLogit(ChoiceModel):
         
         return _unpack_tuple(output) # Unpack before returning
  
-    
     def _setup_input_data(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,
                           panels=None, init_coeff=None, random_state=None, n_draws=200, halton=True, verbose=1,
-                          predict_mode=False):
+                          predict_mode=False, halton_opts=None):
         if random_state is not None:
             np.random.seed(random_state)
 
@@ -323,7 +348,7 @@ class MixedLogit(ChoiceModel):
             avail = avail.reshape(N, P, J)
 
         # Generate draws
-        draws = self._generate_draws(N, R, halton)  # (N,Kr,R)
+        draws = self._generate_draws(N, R, halton, halton_opts=halton_opts)  # (N,Kr,R)
         if init_coeff is None:
             betas = np.repeat(.1, K + Kr)
         else:
@@ -542,12 +567,13 @@ class MixedLogit(ChoiceModel):
         betas_random = self._apply_distribution(betas_random)
         return betas_fixed, betas_random
 
-    def _generate_draws(self, sample_size, n_draws, halton=True):
+    def _generate_draws(self, sample_size, n_draws, halton=True, halton_opts=None):
         """Generate draws based on the given mixing distributions."""
         if halton:
-            draws = self._get_halton_draws(sample_size, n_draws, len(self._rvdist))
+            draws = self._generate_halton_draws(sample_size, n_draws, len(self._rvdist),
+                                                **halton_opts if halton_opts is not None else {})
         else:
-            draws = self._get_random_draws(sample_size, n_draws, len(self._rvdist))
+            draws = self._generate_random_draws(sample_size, n_draws, len(self._rvdist))
 
         for k, dist in enumerate(self._rvdist):
             if dist in ['n', 'ln', 'tn']:  # Normal based
@@ -561,15 +587,16 @@ class MixedLogit(ChoiceModel):
 
         return draws  # (N,Kr,R)
 
-    def _get_random_draws(self, sample_size, n_draws, n_vars):
+    def _generate_random_draws(self, sample_size, n_draws, n_vars):
         """Generate random uniform draws between 0 and 1."""
         return np.random.uniform(size=(sample_size, n_vars, n_draws))
 
-    def _get_halton_draws(self, sample_size, n_draws, n_vars, shuffled=False):
-        """Generate halton draws between 0 and 1."""
-        primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 71, 73, 79, 83, 89, 97, 101, 103,
-                  107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197, 199,
-                  211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311, 313]
+    def _generate_halton_draws(self, sample_size, n_draws, n_vars, shuffled=False, drop=100, primes=None):
+        """Generate Halton draws for multiple random variables using different primes as base"""
+        if primes is None:
+            primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 71, 73, 79, 83, 89, 97, 101,
+                      103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
+                      199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311]
         
         def halton_seq(length, prime=3, shuffled=False, drop=100):
             """Generates a halton sequence while handling memory efficiently.
@@ -598,8 +625,7 @@ class MixedLogit(ChoiceModel):
             return seq
 
         draws = [halton_seq(sample_size*n_draws, prime=primes[i % len(primes)],
-                            shuffled=shuffled).reshape(sample_size, n_draws)
-                 for i in range(n_vars)]
+                            shuffled=shuffled, drop=drop).reshape(sample_size, n_draws) for i in range(n_vars)]
         draws = np.stack(draws, axis=1)
         return draws  # (N,Kr,R)
 

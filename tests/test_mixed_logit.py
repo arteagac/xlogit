@@ -42,7 +42,7 @@ def test_log_likelihood():
     # Compute log likelihood using xlogit
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
-    draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
+    draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
     panel_info = np.ones((N, P))
     obtained_loglik, _ = model._loglik_gradient(betas, X_, y_, panel_info,
                                                 draws, None, None, R)
@@ -67,7 +67,7 @@ def test__transform_betas():
     # Compute log likelihood using xlogit
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
-    draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
+    draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
     expected_betas = betas[None, [0, 1], None] + \
         draws*betas[None, [2, 3], None]
     _, obtained_betas = model._transform_betas(betas, draws)
@@ -114,7 +114,7 @@ def test_predict():
                                           return_freq=True)
     
     # Compute choice probabilities by hand
-    draws = model._get_halton_draws(N, R, K)  # (N,Kr,R)
+    draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
     Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
     V = np.einsum('npjk,nkr -> npjr', X_, Br)
     V[V > MAX_COMP_EXP] = MAX_COMP_EXP
@@ -123,8 +123,7 @@ def test_predict():
     expec_proba = e_proba.prod(axis=1).mean(axis=-1) 
     expec_ypred = model.alternatives[np.argmax(expec_proba, axis=1)]
     alt_list, counts = np.unique(expec_ypred, return_counts=True)
-    expec_freq = dict(zip(list(alt_list),
-                          list(np.round(counts/np.sum(counts), 3))))
+    expec_freq = dict(zip(list(alt_list), list(np.round(counts/np.sum(counts), 3))))
     
 
     assert np.array_equal(expec_ypred, y_pred) 

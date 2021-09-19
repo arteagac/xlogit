@@ -107,7 +107,7 @@ userNotes = ('Example of a mixture of logit models with three alternatives, '
              'approximated using Monte-Carlo integration.')
 
 # Create the Biogeme object
-biogeme = bio.BIOGEME(database, logprob, numberOfDraws=2000, userNotes=userNotes)
+biogeme = bio.BIOGEME(database, logprob, numberOfDraws=1500, userNotes=userNotes)
 biogeme.modelName = '05normalMixture'
 
 # Estimate the parameters
@@ -117,13 +117,11 @@ print(pandasResults)
 
 """
 OUTPUT: 
- Log likelihood (N = 752):  -4359.414 Gradient norm:  0.01 Hessian norm: 7e+02 BHHH norm: 4e+03
-
+Log likelihood (N = 752):   -4360.56 Gradient norm:       0.02 Hessian norm:       7e+02 BHHH norm:       4e+03
               Value   Std err     t-test       p-value  Rob. Std err  Rob. t-test  Rob. p-value
-ASC_CAR    0.283662  0.055212   5.137711  2.781055e-07      0.104448     2.715823  6.611133e-03
-ASC_TRAIN -0.573214  0.076517  -7.491366  6.816769e-14      0.135545    -4.228960  2.347746e-05
-B_COST    -1.649377  0.077663 -21.237650  0.000000e+00      0.293555    -5.618629  1.924789e-08
-B_TIME    -3.228652  0.156817 -20.588679  0.000000e+00      0.188068   -17.167489  0.000000e+00
-B_TIME_S   3.631337  0.160659  22.602749  0.000000e+00      0.216299    16.788485  0.000000e+00
-
+ASC_CAR    0.277854  0.055766   4.982508  6.276531e-07      0.105379     2.636708  8.371494e-03
+ASC_TRAIN -0.585135  0.078689  -7.436023  1.036948e-13      0.138438    -4.226694  2.371499e-05
+B_COST    -1.655086  0.077745 -21.288720  0.000000e+00      0.293532    -5.638518  1.715196e-08
+B_TIME    -3.178309  0.168664 -18.843978  0.000000e+00      0.195959   -16.219249  0.000000e+00
+B_TIME_S   3.678093  0.169751  21.667619  0.000000e+00      0.231974    15.855631  0.000000e+00
 """

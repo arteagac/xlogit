@@ -1,5 +1,8 @@
 import pandas
 import numpy as np
+import sys
+sys.path.append("../../../")  # Path of xlogit library root folder.
+
 df_wide = pandas.read_table("http://transp-or.epfl.ch/data/swissmetro.dat", sep="\t")
 df_wide = df_wide[(df_wide['PURPOSE'].isin([1, 3]) \
                    & (df_wide['CHOICE'] != 0))]  # Filter samples
@@ -25,23 +28,23 @@ varnames=['ASC_CAR', 'ASC_TRAIN', 'CO', 'TT']
 model = MixedLogit()
 model.fit(X=df[varnames], y=df['CHOICE'], varnames=varnames,
           alts=df['alt'], ids=df['custom_id'], panels=df["ID"],
-          avail=df['AV'], randvars={'TT': 'n'}, n_draws=2000)
-
+          avail=df['AV'], randvars={'TT': 'n'}, n_draws=1500)
+model.summary()
 """
 OUTPUT:
-Estimation time= 2.2 seconds
+Estimation time= 1.3 seconds
 ---------------------------------------------------------------------------
 Coefficient              Estimate      Std.Err.         z-val         P>|z|
 ---------------------------------------------------------------------------
-ASC_CAR                 0.2804844     0.0578490     4.8485635      7.39e-06 ***
-ASC_TRAIN              -0.5775717     0.0828659    -6.9699572      4.63e-11 ***
-CO                     -1.6556342     0.0776138   -21.3316879      3.38e-78 ***
-TT                     -3.2095640     0.1875042   -17.1172874      1.26e-54 ***
-sd.TT                   3.6567921     0.1746055    20.9431714      5.88e-76 ***
+ASC_CAR                 0.2831101     0.0564250     5.0174585      3.29e-06 ***
+ASC_TRAIN              -0.5722759     0.0791059    -7.2343003      7.96e-12 ***
+CO                     -1.6601672     0.0778264   -21.3316760      3.38e-78 ***
+TT                     -3.2289890     0.1749384   -18.4578595      6.36e-62 ***
+sd.TT                   3.6485428     0.1667409    21.8815047       2.2e-81 ***
 ---------------------------------------------------------------------------
 Significance:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
-Log-Likelihood= -4359.894
-AIC= 8729.789
-BIC= 8752.902
+Log-Likelihood= -4359.218
+AIC= 8728.436
+BIC= 8751.550
 """

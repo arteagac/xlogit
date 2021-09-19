@@ -3,7 +3,7 @@ if(length(args)== 2){
   n_draws = strtoi(args[1])
   n_cores = strtoi(args[2])
 }else{
-  n_draws = 2000
+  n_draws = 1500
   n_cores = 4
 }
 
@@ -161,17 +161,16 @@ log = function(msg){
 #cat(paste("apollo", n_draws, n_cores, model$timeTaken, model$LLout, sep=","), 
 #file = "results/benchmark_results_apollo_biogeme.csv", sep="\n", append=TRUE)
 
-
-
-#LL(start)                        : -6922.021
+#LL(start)                        : -6922.01
 #LL(0)                            : -6964.663
 #LL(C)                            : -5864.998
-#LL(final)                        : -4360.036
+#LL(final)                        : -4359.462
 
 #Estimates:
 #             Estimate        s.e.   t.rat.(0)    Rob.s.e. Rob.t.rat.(0)
-#ASC_CAR        0.2809     0.05735       4.898      0.1094         2.567
-#ASC_TRAIN     -0.5762     0.08440      -6.826      0.1519        -3.792
-#B_CO          -1.6552     0.07775     -21.289      0.2924        -5.660
-#u_TT          -3.2119     0.20212     -15.891      0.2509       -12.804
-#sd_TT         -3.6557     0.18057     -20.246      0.2607       -14.022
+#ASC_CAR        0.2803     0.05706       4.913      0.1086         2.582
+#ASC_TRAIN     -0.5784     0.08332      -6.942      0.1488        -3.887
+#B_CO          -1.6602     0.07792     -21.308      0.2918        -5.689
+#u_TT          -3.2052     0.19601     -16.352      0.2369       -13.528
+#sd_TT          3.6633     0.17864      20.507      0.2558        14.323
+

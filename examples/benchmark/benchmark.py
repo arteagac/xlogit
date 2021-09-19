@@ -58,10 +58,10 @@ profile_range_draws("Rscript gmnl_run.R", r_draws, "electricity")
 # Print estimates
 n_draws = 1500
 log("\n\n********* ESTIMATES (COEFF AND STD.ERR.)*********")
-print_estimates("python xlogit_run.py", n_draws, "artificial")
+print_estimates("python xlogit_run_batch.py", n_draws, "artificial")
 print_estimates("Rscript gmnl_run.R", n_draws, "artificial")
 print_estimates("Rscript mlogit_run.R", n_draws, "artificial")
-print_estimates("python xlogit_run.py", n_draws, "electricity")
+print_estimates("python xlogit_run_batch.py", n_draws, "electricity")
 print_estimates("Rscript gmnl_run.R", n_draws, "electricity")
 print_estimates("Rscript mlogit_run.R", n_draws, "electricity")
 

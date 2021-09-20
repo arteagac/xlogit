@@ -2,6 +2,8 @@ options(repos="http://cran.us.r-project.org")
 
 install.packages("mlogit")
 install.packages("apollo")
+install.packages("gmnl")
+install.packages("mixl")
 
 # Below is the ideal way to install the R packages to keep
 # consistency in the versions. Unfortunately, in MS Windows

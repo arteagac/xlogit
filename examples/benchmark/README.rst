@@ -26,7 +26,8 @@ This is a minimal version of the full benchmark replication that can be executed
 
     docker cp <container_id>:xlogit/examples/benchmark/results .
 
-   To identify your container id, you need to run ``docker ps -a``. The ``Dockerfile`` used to create the ``xlogit-benchmark`` image can be found in the provided ``benchmark`` folder.
+   To identify your container id, you need to run ``docker ps -a``. The ``Dockerfile`` used to create the ``xlogit-benchmark`` image can be found in the provided ``benchmark`` folder. 
+
 
 2.1 Requirements
 ----------------
@@ -98,7 +99,7 @@ Step 1.4 Install Python packages for benchmark
 In this step, ``xlogit``, ``pylogit``, and ``biogeme`` are installed. In your command line (or Anaconda Powershell Prompt in windows) navigate to the location of the provided ``benchmark`` folder using the ``cd`` (change directory) command (e.g. ``cd C:\User\xlogit\benchmark``) and then install the Python requirements using the following commands::
 
     pip install numpy
-    pip install xlogit==0.1.0
+    pip install xlogit==0.1.4
     pip install pylogit==0.2.2
     pip install biogeme==3.2.6
     pip install -r requirements_python.txt
@@ -112,11 +113,11 @@ Step 2. Setup R tools
 ^^^^^^^^^^^^^^^^^^^^^
 Step 2.1 Install R v4.0
 """""""""""""""""""""""
-You must use R version 4.0.3 (and not 3.6) for the benchmark as the installation of dependencies is easier with this version. 
+You must use R version 4.0.3 (and not 3.6) for the benchmark, as the installation of dependencies is easier with this version. 
 
 * For Windows: Download R v4.0 from  https://cran.r-project.org/bin/windows/base/R-4.0.3-win.exe and follow the installation prompts. Make sure that R is available from the Anaconda Powershell Prompt by executing ``Rscript --version``. If this command does not run properly, you need to add **R's installation folder path** (including the "bin" folder) to the Path environment variable as shown in the image in `this link <https://arteagac.github.io/images/other/add_environment_variable_win10.png>`__. For instance, a common R installation folder is ``C:\Program Files\R\R-4.0.3\bin`` (note that the ``bin`` folder at the end of the path is **required**). After adding your R installation folder to the Path environment variable, you need to close your Anaconda Powershell Prompt and open it again **in Administrator mode** (Right click Anaconda Powershell Prompt and select "Run as Administrator") so the changes take effect. Remember that after reopeing the command line you need to run again ``conda activate benchmark``.
 
-* For Linux: Depending on your distribution, different instructions for installation of R 4.0.3 are available at https://docs.rstudio.com/resources/install-r/. Just make sure you select v4.0.3, instead of 3.6, which is the default suggested by the instructions. 
+* For Linux: Depending on your distribution, different instructions for installation of R 4.0.3 are available at https://docs.rstudio.com/resources/install-r/. Just make sure you select v4.0.3, instead of 3.6, which is the default suggested by these instructions. 
 
 .. hint::
    For instance, if you use Ubuntu 20.04, you need to run the following commands to install Rv4.0::
@@ -134,7 +135,7 @@ Make sure that the ``Rscript`` command can be called from the command line (or A
 
 Step 2.2 Install R packages
 """""""""""""""""""""""""""
-This step installs the ``apollo`` and ``mlogit`` R packages. In your command line (or Anaconda Powershell Prompt in windows) navigate to the location of the provided ``benchmark`` folder using the ``cd`` (change directory) command (e.g. ``cd C:\User\xlogit\benchmark``) and then execute the command below. This command may require Administrator permissions so if you are in Windows **Run the Anaconda Powershell Prompt as Administrator** or if you are in Linux run this command as ``sudo``::
+This step installs the ``apollo``, ``mlogit``, ``mixl``, and ``gmnl`` R packages. In your command line (or Anaconda Powershell Prompt in windows) navigate to the location of the provided ``benchmark`` folder using the ``cd`` (change directory) command (e.g. ``cd C:\User\xlogit\benchmark``) and then execute the command below. This command may require Administrator permissions so if you are in Windows **Run the Anaconda Powershell Prompt as Administrator** or if you are in Linux run this command as ``sudo``::
 
     Rscript requirements_r.R
 
@@ -154,6 +155,9 @@ During the execution in Microsoft Windows, the Anaconda Powershell Prompt someti
 * The section titled "ESTIMATES (COEFF AND STD.ERR.)" contains the results for Table 1 and Table 2.
 * The section titled "APOLLO AND BIOGEME BENCHMARK" contains the results for Figure 2.
 * The section titled "TABLE COMPARISON ESTIMATION TIME" contains the results for Table 3.
+
+.. warning::
+   The descriptions in the benchmark scripts and output files do not include the packages ``mixl`` and ``gmnl`` given that these packages were added last as additional comparison packages.
 
 The usage example in Section 3.3 of the paper is not part of the output file but it can be found in the Google Colab file https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/benchmark/google_colab_benchmark.ipynb in the section titled "Part 5: Fishing dataset usage example"
 

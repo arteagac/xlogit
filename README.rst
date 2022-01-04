@@ -138,15 +138,19 @@ Citing ``xlogit``
 =================
 Please cite ``xlogit`` as follows:
 
-    Arteaga, C., Park, J., Bhat, P., & Paz, A. (2021). xlogit: An Open-Source Python Package for GPU-Accelerated Estimation of Mixed Logit Models. https://github.com/arteagac/xlogit
+    Arteaga, C., Park, J., Beeramoole, P. B., & Paz, A. (2022). xlogit: An open-source Python package for GPU-accelerated estimation of Mixed Logit models. Journal of Choice Modelling, 42, 100339. https://doi.org/10.1016/j.jocm.2021.100339
     
 Or using BibTex as follows::
 
-    @misc{xlogit,
-        author = {Arteaga, Cristian and Park, JeeWoong and Bhat, Prithvi and Paz, Alexander},
-        title = {{xlogit: An Open-Source Python Package for GPU-Accelerated Estimation of Mixed Logit Models.}},
-        url = {https://github.com/arteagac/xlogit},
-        year = {2021}
+    @article{xlogit,
+        title = {xlogit: An open-source Python package for GPU-accelerated estimation of Mixed Logit models},
+        author = {Cristian Arteaga and JeeWoong Park and Prithvi Bhat Beeramoole and Alexander Paz},
+        journal = {Journal of Choice Modelling},
+        volume = {42},
+        pages = {100339},
+        year = {2022},
+        issn = {1755-5345},
+        doi = {https://doi.org/10.1016/j.jocm.2021.100339},
     }
 
 

@@ -101,9 +101,10 @@ No GPU? No problem
 ==================
 ``xlogit`` can also be used without a GPU. However, if you need to speed up your model estimation, there are several low cost and even free options to access cloud GPU resources. For instance:
 
-- `Google Colab <https://colab.research.google.com>`_ offers free GPU resources for learning purposes with no setup required, as the service can be accessed using a web browser. Using xlogit in Google Colab is very easy as it runs out of the box without needing to install CUDA or CuPy, which are installed by default. For examples of xlogit running in Google Colab `see this link <https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb>`_.
-- The `Google Cloud platform <https://cloud.google.com/compute/gpus-pricing>`_ offers GPU processing starting at $0.45 USD per hour for a NVIDIA Tesla K80 GPU with 4,992 CUDA cores.
-- `Amazon Sagemaker <https://aws.amazon.com/ec2/instance-types/p2/>`_ offers virtual machine instances with the same TESLA K80 GPU at less than $1 USD per hour.
+- `Google Colab <https://colab.research.google.com>`_ offers free GPU resources with no setup required, as the service can be accessed using a web browser. Using xlogit in Google Colab is very easy as it runs out of the box without having to to install CUDA or CuPy, which are installed by default. For examples of xlogit running in Google Colab `see this link <https://colab.research.google.com/github/arteagac/xlogit/blob/master/examples/mixed_logit_model.ipynb>`_.
+- `Amazon Sagemaker Studio Lab <https://studiolab.sagemaker.aws/>`_ offers Python runtime environments with free GPUs.
+- `Google Cloud platform <https://cloud.google.com/compute/gpus-pricing>`_ offers GPU processing at less than $1 USD per hour for NVIDIA Tesla K80 GPU with 4,992 CUDA cores.
+- `Amazon Sagemaker <https://aws.amazon.com/ec2/instance-types/p2/>`_ offers virtual machine instances with the same TESLA K80 GPU at a similar price range of less than $1 USD per hour.
 
 Benchmark
 =========

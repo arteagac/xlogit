@@ -330,7 +330,7 @@ class MixedLogit(ChoiceModel):
         if random_state is not None:
             np.random.seed(random_state)
 
-        X, y, panels = self._arrange_long_format(X, y, ids, alts, panels)
+        X, y, panels, avail = self._arrange_long_format(X, y, ids, alts, panels, avail)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
         self._model_specific_validations(randvars, Xnames)

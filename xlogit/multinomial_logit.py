@@ -232,7 +232,7 @@ class MultinomialLogit(ChoiceModel):
     def _setup_input_data(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
             init_coeff=None, random_state=None, verbose=1, predict_mode=False):
-        X, y, _ = self._arrange_long_format(X, y, ids, alts)
+        X, y, _, avail = self._arrange_long_format(X, y, ids, alts, None, avail)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
         y = y.reshape(X.shape[0], X.shape[1])  if not predict_mode else None

@@ -169,7 +169,7 @@ class ChoiceModel(ABC):
                 raise ValueError("inconsistent 'y' values. Make sure the "
                                  "data has one choice per sample")
 
-    def _arrange_long_format(self, X, y, ids, alts, panels=None):
+    def _arrange_long_format(self, X, y, ids, alts, panels=None, avail=None):
         """Sort the input data for easy reshaping in future steps.
 
         This ensures that that data can be safely reshaped later to do
@@ -187,8 +187,10 @@ class ChoiceModel(ABC):
         y = y[sorted_idx] if y is not None else None
         if panels is not None:
             panels = panels[sorted_idx]
+        if avail is not None:
+            avail = avail[sorted_idx]
         self._check_long_format_consistency(ids, alts, sorted_idx)
-        return X, y, panels
+        return X, y, panels, avail
 
     def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights):
         """Validate potential mistakes in the input data."""

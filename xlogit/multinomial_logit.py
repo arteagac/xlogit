@@ -3,6 +3,7 @@
 
 import numpy as np
 from ._choice_model import ChoiceModel
+from scipy.optimize import minimize
 
 """
 Notations
@@ -57,7 +58,7 @@ class MultinomialLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, maxiter=2000, random_state=None, verbose=1):
+            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -104,6 +105,12 @@ class MultinomialLogit(ChoiceModel):
         random_state : int, default=None
             Random seed for numpy random generator
 
+        tol_opts : dict, default=None
+            Options for tolerance of optimization routine. The dictionary accepts the following options (keys):
+
+                ftol : float, default=1e-10
+                    Tolerance for objective function (log-likelihood)
+
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages,
             1: Some messages, 2: All messages
@@ -127,9 +134,13 @@ class MultinomialLogit(ChoiceModel):
                                    random_state=random_state, verbose=verbose,
                                    predict_mode=False)
 
+        tol = {'ftol': 1e-10}
+        if tol_opts is not None:
+            tol.update(tol_opts)
+
         # Call optimization routine
-        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail,
-                                                maxiter)
+        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail, maxiter, tol['ftol'])
+        
         self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
 
 
@@ -265,7 +276,7 @@ class MultinomialLogit(ChoiceModel):
         p = eXB/np.sum(eXB, axis=1, keepdims=True)  # (N,J)
         return p
 
-    def _loglik_and_gradient(self, betas, X, y, weights, avail):
+    def _loglik_gradient(self, betas, X, y, weights, avail):
         """Compute log-likelihood, gradient, and hessian."""
         p = self._compute_probabilities(betas, X, avail)
         # Log likelihood
@@ -288,9 +299,9 @@ class MultinomialLogit(ChoiceModel):
         """Show estimation results in console."""
         super(MultinomialLogit, self).summary()
 
-    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter):
+    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter, ftol):
         """BFGS optimization routine."""
-        res, g, Hinv = self._loglik_and_gradient(betas, X, y, weights, avail)
+        res, g, Hinv = self._loglik_gradient(betas, X, y, weights, avail)
         current_iteration = 0
         convergence = False
         while True:
@@ -303,8 +314,8 @@ class MultinomialLogit(ChoiceModel):
                 step = step/2
                 s = step*d
                 betas = betas + s
-                resnew, gnew, _ = self._loglik_and_gradient(betas, X, y,
-                                                            weights, avail)
+                resnew, gnew, _ = self._loglik_gradient(betas, X, y,
+                                                        weights, avail)
                 if resnew <= res or step < 1e-10:
                     break
 
@@ -318,12 +329,14 @@ class MultinomialLogit(ChoiceModel):
                     Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                     (s.dot(delta_g)))
             current_iteration = current_iteration + 1
-            if np.abs(res - old_res) < 0.00001:
+            if np.abs(res - old_res) < ftol:
                 convergence = True
+                message = "Optimization completed succesfully"
                 break
             if current_iteration > maxiter:
                 convergence = False
+                message = "The optimization reached the maximum number of iterations without convergence"
                 break
 
-        return {'success': convergence, 'x': betas, 'fun': res,
+        return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
                 'hess_inv': Hinv, 'nit': current_iteration}

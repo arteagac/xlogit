@@ -339,7 +339,7 @@ class MixedLogit(ChoiceModel):
         Kr = len(randvars)
 
         if panels is not None:  # If panel
-            X, y, panel_info = self._balance_panels(X, y, panels)
+            X, y, avail, panel_info = self._balance_panels(X, y, avail, panels)
             N, P = panel_info.shape
         else:
             N, P = X.shape[0], 1
@@ -523,7 +523,7 @@ class MixedLogit(ChoiceModel):
                     (betas_random[:, k, :] > 0)
         return betas_random
 
-    def _balance_panels(self, X, y, panels):
+    def _balance_panels(self, X, y, avail, panels):
         """Balance panels if necessary and produce a new version of X and y.
 
         If panels are already balanced, the same X and y are returned. This also returns panel_info, which keeps track
@@ -537,21 +537,24 @@ class MixedLogit(ChoiceModel):
 
         if not np.all(p_obs[0] == p_obs):  # Balancing needed
             y = y.reshape(X.shape[0], J, 1) if y is not None else None
-            Xbal, ybal = np.zeros((N*P, J, K)), np.zeros((N*P, J, 1))
+            avail = avail.reshape(X.shape[0], J, 1) if avail is not None else None
+            Xbal, ybal, availbal = np.zeros((N*P, J, K)), np.zeros((N*P, J, 1)), np.zeros((N*P, J, 1))
             panel_info = np.zeros((N, P))
             cum_p = 0  # Cumulative sum of n_obs at every iteration
             for n, p in enumerate(p_obs):
                 # Copy data from original to balanced version
                 Xbal[n*P:n*P + p, :, :] = X[cum_p:cum_p + p, :, :]
                 ybal[n*P:n*P + p, :, :] = y[cum_p:cum_p + p, :, :] if y is not None else None  # if in predict mode
+                availbal[n*P:n*P + p, :, :] = avail[cum_p:cum_p + p, :, :] if avail is not None else None
                 panel_info[n, :p] = np.ones(p)
                 cum_p += p
 
         else:  # No balancing needed
-            Xbal, ybal = X, y
+            Xbal, ybal, availbal = X, y, avail
             panel_info = np.ones((N, P))
         ybal = ybal if y is not None else None  # in predict mode
-        return Xbal, ybal, panel_info
+        availbal = availbal if avail is not None else None
+        return Xbal, ybal, availbal, panel_info
 
     def _compute_derivatives(self, betas, draws):
         """Compute the derivatives based on the mixing distributions."""

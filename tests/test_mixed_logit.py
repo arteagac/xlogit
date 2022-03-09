@@ -24,7 +24,7 @@ def test__balance_panels():
     """
     X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
     model = MixedLogit()
-    X_, y_, panel_info = model._balance_panels(X_, y_, panels)
+    X_, y_, _, panel_info = model._balance_panels(X_, y_, None, panels)
 
     assert np.array_equal(panel_info, np.array([[1, 1], [1, 0]]))
     assert X_.shape == (4, 2, 2)

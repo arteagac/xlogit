@@ -16,3 +16,5 @@ examples/benchmark/Rprof.out
 
 # Docs builds
 /docs/build/
+
+.vscode

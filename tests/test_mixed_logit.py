@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from xlogit import MixedLogit
 from xlogit import device
+from pytest import approx
 device.disable_gpu_acceleration()
 
 # Setup data used for tests
@@ -18,43 +19,30 @@ N, J, K, R = 3, 2, 2, 5
 MIN_COMP_ZERO = 1e-300
 MAX_COMP_EXP = 700
 
-def test__balance_panels():
-    """
-    Ensures that unbalanced panels are properly balanced when required
-    """
-    X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
-    model = MixedLogit()
-    X_, y_, _, panel_info = model._balance_panels(X_, y_, None, panels)
-
-    assert np.array_equal(panel_info, np.array([[1, 1], [1, 0]]))
-    assert X_.shape == (4, 2, 2)
-
-
 def test_log_likelihood():
     """
     Computes the log-likelihood "by hand" for a simple example and ensures
     that the one returned by xlogit is the same
     """
-    P = 1  # Without panel data
     betas = np.array([.1, .1, .1, .1])
-    X_, y_ = X.reshape(N, P, J, K), y.reshape(N, P, J, 1)
+    X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
 
     # Compute log likelihood using xlogit
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
     draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-    panel_info = np.ones((N, P))
-    obtained_loglik, _ = model._loglik_gradient(betas, X_, y_, panel_info,
-                                                draws, None, None, R)
+    obtained_loglik = model._loglik_gradient(betas, X_, y_, None, draws,
+                                            None, None, {'samples': N, 'draws': R},
+                                            return_gradient=False)
 
     # Compute expected log likelihood "by hand"
     Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
-    eXB = np.exp(np.einsum('npjk,nkr -> npjr', X_, Br))
-    p = eXB/np.sum(eXB, axis=2, keepdims=True)
+    eXB = np.exp(np.einsum('njk,nkr -> njr', X_, Br))
+    p = eXB/np.sum(eXB, axis=1, keepdims=True)
     expected_loglik = -np.sum(np.log(
-        (y_*p).sum(axis=2).prod(axis=1).mean(axis=1)))
+        (y_*p).sum(axis=1).mean(axis=1)))
 
-    assert pytest.approx(expected_loglik, obtained_loglik)
+    assert expected_loglik == pytest.approx(obtained_loglik)
 
 
 def test__transform_betas():
@@ -78,16 +66,16 @@ def test__transform_betas():
 def test_fit():
     """
     Ensures the log-likelihood works for multiple iterations with the default
-    initial coefficients. The value of -1.794 was computed by hand for
+    initial coefficients. The value of -0.851595 was computed by hand for
     comparison purposes
     """
     # There is no need to initialize a random seed as the halton draws produce
     # reproducible results
     model = MixedLogit()
     model.fit(X, y, varnames, alts, ids, randvars, n_draws=10, panels=panels,
-              maxiter=0, verbose=0, halton=True)
+              maxiter=0, verbose=0, halton=True, init_coeff=np.repeat(.1, 4))
 
-    assert pytest.approx(model.loglikelihood, -1.79451632)
+    assert model.loglikelihood == pytest.approx(-0.851595)
     
 def test_predict():
     """
@@ -95,9 +83,8 @@ def test_predict():
     """
     # There is no need to initialize a random seed as the halton draws produce
     # reproducible results
-    P = 1  # Without panel data
     betas = np.array([.1, .1, .1, .1])
-    X_ = X.reshape(N, P, J, K)
+    X_ = X.reshape(N, J, K)
     
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
@@ -116,15 +103,13 @@ def test_predict():
     # Compute choice probabilities by hand
     draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
     Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
-    V = np.einsum('npjk,nkr -> npjr', X_, Br)
-    V[V > MAX_COMP_EXP] = MAX_COMP_EXP
+    V = np.einsum('njk,nkr -> njr', X_, Br)
     eV = np.exp(V)
-    e_proba = eV/np.sum(eV, axis=2, keepdims=True)
-    expec_proba = e_proba.prod(axis=1).mean(axis=-1) 
+    e_proba = eV/np.sum(eV, axis=1, keepdims=True)
+    expec_proba = e_proba.mean(axis=-1) 
     expec_ypred = model.alternatives[np.argmax(expec_proba, axis=1)]
     alt_list, counts = np.unique(expec_ypred, return_counts=True)
     expec_freq = dict(zip(list(alt_list), list(np.round(counts/np.sum(counts), 3))))
-    
 
     assert np.array_equal(expec_ypred, y_pred) 
     assert expec_freq == freq

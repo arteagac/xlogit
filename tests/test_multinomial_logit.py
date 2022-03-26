@@ -2,6 +2,7 @@
 import numpy as np
 import pytest
 from xlogit import MultinomialLogit
+from pytest import approx
 
 # Setup data used for tests
 X = np.array([[2, 1], [1, 3], [3, 1], [2, 4], [2, 1], [2, 4]])
@@ -22,15 +23,15 @@ def test_log_likelihood():
 
     # Compute log likelihood using xlogit
     model = MultinomialLogit()
-    obtained_loglik, _, _ = model._loglik_gradient(betas, X_, y_, None,
+    obtained_loglik = model._loglik_gradient(betas, X_, y_, None,
                                                        None)
 
     # Compute expected log likelihood "by hand"
     eXB = np.exp(X_.dot(betas))
-    expected_loglik = np.sum(np.log(
+    expected_loglik = -np.sum(np.log(
         np.sum(eXB/np.sum(eXB, axis=1, keepdims=True)*y_, axis=1)))
 
-    assert pytest.approx(expected_loglik, obtained_loglik)
+    assert obtained_loglik == approx(expected_loglik)
 
 def test_predict():
     """
@@ -68,7 +69,7 @@ def test_predict():
 def test__bfgs_optimization():
     """
     Ensure that the bfgs optimization properly processes the input for one
-    iteration. The value of 0.4044 was computed by hand for
+    iteration. The value of 0.276999 was computed by hand for
     comparison purposes
     """
     X_, y_ = X.reshape(N, J, K), y.reshape(N, J)
@@ -76,7 +77,7 @@ def test__bfgs_optimization():
     model = MultinomialLogit()
     res = model._bfgs_optimization(betas, X_, y_, None, None, 0, 1e-5)
 
-    assert pytest.approx(res['fun'], 0.40443136)
+    assert res['fun'] == approx(0.276999)
 
 
 def test_fit():
@@ -89,4 +90,4 @@ def test_fit():
     model.fit(X, y, varnames=varnames, alts=alts, ids=ids,
               maxiter=0, verbose=0)
 
-    assert pytest.approx(model.loglikelihood, -0.40443136)
+    assert model.loglikelihood == approx(-0.40443136)

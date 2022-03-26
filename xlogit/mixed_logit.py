@@ -5,6 +5,7 @@ import scipy.stats
 from scipy.optimize import minimize
 from ._choice_model import ChoiceModel
 from ._device import device as dev
+from .multinomial_logit import MultinomialLogit
 import numpy as np
 
 """
@@ -18,6 +19,8 @@ Notations
 
 MIN_COMP_ZERO = 1e-300
 MAX_COMP_EXP = 700
+
+_unpack_tuple = lambda x : x if len(x) > 1 else x[0]
 
 class MixedLogit(ChoiceModel):
     """Class for estimation of Mixed Logit Models.
@@ -151,8 +154,15 @@ class MixedLogit(ChoiceModel):
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
 
-        batch_size : int, default=None
-            Size of batches of random draws used to avoid overflowing memory during computations.
+        batch_size : int or dict, default=None
+            Size of batches used to avoid memory overflow. If `int`, the value is the batch size across draws.
+            If dict, the following options control batching across samples and draws:
+
+                samples : int, default=n_samples
+                    Batch size across samples
+
+                draws : int, default=n_draws
+                    Batch size across draws
 
         Returns
         -------
@@ -163,12 +173,17 @@ class MixedLogit(ChoiceModel):
             = self._as_array(X, y, varnames, alts, isvars, ids, weights,  panels, avail)
 
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
-        
-        self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
-        
-        batch_size = n_draws if batch_size is None else min(n_draws, batch_size)
 
-        betas, X, y, panel_info, draws, weights, avail, Xnames = \
+        if init_coeff is None:
+            # Initialize coefficients using a multinomial logit model
+            mnl = MultinomialLogit()
+            mnl.fit(X, y, varnames, alts, ids, isvars=isvars, weights=weights,
+                    avail=avail, base_alt=base_alt, fit_intercept=fit_intercept)
+            init_coeff = np.concatenate((mnl.coeff_, np.repeat(.1, len(randvars))))
+
+        self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
+
+        betas, X, y, panels, draws, weights, avail, Xnames = \
             self._setup_input_data(X, y, varnames, alts, ids, randvars, isvars=isvars, weights=weights, avail=avail,
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
                                    halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts)
@@ -177,10 +192,9 @@ class MixedLogit(ChoiceModel):
         if tol_opts is not None:
             tol.update(tol_opts)
 
-        optimizat_res = \
-            minimize(self._loglik_gradient, betas, jac=True, method='BFGS', tol=tol['ftol'],
-                     args=(X, y, panel_info, draws, weights, avail, batch_size), 
-                     options={'gtol': tol['gtol'], 'maxiter': maxiter, 'disp': verbose > 0})
+        batch_sizes = self._setup_batch_sizes(batch_size, X, draws)
+
+        optimizat_res = self._bfgs_optimization(betas, X, y, panels, draws, weights, avail, batch_sizes, maxiter, tol['ftol'])
 
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 
@@ -242,9 +256,16 @@ class MixedLogit(ChoiceModel):
         verbose : int, default=1
             Verbosity of messages to show during estimation. 0: No messages, 1: Some messages, 2: All messages
 
-        batch_size : int, default=None
-            Size of batches of random draws used to avoid overflowing memory during computations.
-            
+        batch_size : int or dict, default=None
+            Size of batches used to avoid memory overflow. If `int`, the value is the batch size across draws.
+            If dict, the following options control batching across samples and draws:
+
+                samples : int, default=n_samples
+                    Batch size across samples
+
+                draws : int, default=n_draws
+                    Batch size across draws
+
         return_proba : bool, default=False
             If True, also return the choice probabilities
 
@@ -271,7 +292,7 @@ class MixedLogit(ChoiceModel):
         
         self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
         
-        betas, X, _, panel_info, draws, weights, avail, Xnames = \
+        betas, X, _, panels, draws, weights, avail, Xnames = \
             self._setup_input_data(X, None, varnames, alts, ids, self.randvars,  isvars=isvars, weights=weights,
                                    avail=avail, panels=panels, init_coeff=self.coeff_, random_state=random_state,
                                    n_draws=n_draws, halton=halton, verbose=verbose, predict_mode=True,
@@ -285,23 +306,22 @@ class MixedLogit(ChoiceModel):
         betas = dev.to_gpu(betas) if dev.using_gpu else betas
         
         #=== 2. Compute choice probabilities
-        batch_size = n_draws if batch_size is None else min(n_draws, batch_size)
+        batch_sizes = self._setup_batch_sizes(batch_size, X, draws)
         R = draws.shape[-1]
         
-        p = []        
+        p = []       
+        batch_size = batch_sizes['draws'] 
         n_batches = R//batch_size + (1 if R % batch_size != 0 else 0)
         for batch in range(n_batches):
             draws_batch = draws[:, :, batch*batch_size: batch*batch_size + batch_size]
-            if dev.using_gpu:
-                draws_batch = dev.to_gpu(draws_batch)
+            draws_batch = dev.to_gpu(draws_batch)
 
-            p_batch = self._compute_probabilities(betas, X, panel_info, draws_batch, avail)  # (N,P,J,R)
-            p_batch = self._prob_product_across_panels(p_batch, panel_info)  # (N,J,R)
-            
-            if dev.using_gpu:
-                p_batch = dev.to_cpu(p_batch)
-            p.append(p_batch)
+            p_batch = self._batch_s_compute_probabilities(betas, X, draws_batch, avail, batch_sizes)  # (N,J,R)
+            p_batch = self._prob_product_across_panels(p_batch, panels)  # (Np,J,R)
+
+            p.append(dev.to_cpu(p_batch))
             draws_batch = None
+
         p = np.concatenate(p, axis=-1) 
         proba = p.mean(axis=-1)   # (N,J)
         
@@ -319,9 +339,7 @@ class MixedLogit(ChoiceModel):
             freq = dict(zip(list(alt_list),
                             list(np.round(counts/np.sum(counts), 3))))
             output += (freq, )
-        
-        _unpack_tuple = lambda x : x if len(x) > 1 else x[0]
-        
+      
         return _unpack_tuple(output) # Unpack before returning
  
     def _setup_input_data(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,
@@ -335,19 +353,20 @@ class MixedLogit(ChoiceModel):
         X, Xnames = self._setup_design_matrix(X)
         self._model_specific_validations(randvars, Xnames)
 
-        J, K, R = X.shape[1], X.shape[2], n_draws
+        N, J, K, R = X.shape[0], X.shape[1], X.shape[2], n_draws
         Kr = len(randvars)
 
-        if panels is not None:  # If panel
-            X, y, avail, panel_info = self._balance_panels(X, y, avail, panels)
-            N, P = panel_info.shape
-        else:
-            N, P = X.shape[0], 1
-            panel_info = np.ones((N, 1))
+        if panels is not None:
+            # Convert panel ids to indexes 
+            panels = panels.reshape(N, J)[:, 0]
+            panels_idx = np.empty(N)
+            for i, u in enumerate(np.unique(panels)):
+                panels_idx[np.where(panels==u)] = i
+            panels = panels_idx.astype(int)
 
         # Reshape arrays in the format required for the rest of the estimation
-        X = X.reshape(N, P, J, K)
-        y = y.reshape(N, P, J, 1) if not predict_mode else None
+        X = X.reshape(N, J, K)
+        y = y.reshape(N, J, 1) if not predict_mode else None
 
         if not predict_mode:
             self._setup_randvars_info(randvars, Xnames)
@@ -358,30 +377,32 @@ class MixedLogit(ChoiceModel):
             weights = weights*(N/np.sum(weights))  # Normalize weights
 
         if avail is not None:
-            avail = avail.reshape(N, P, J)
+            avail = avail.reshape(N, J)
 
         # Generate draws
-        draws = self._generate_draws(N, R, halton, halton_opts=halton_opts)  # (N,Kr,R)
+        n_samples = N if panels is None else panels[-1] + 1
+        draws = self._generate_draws(n_samples, R, halton, halton_opts=halton_opts)
+        draws = draws if panels is None else draws[panels]  # (N,Kr,R)
+
         if init_coeff is None:
             betas = np.repeat(.1, K + Kr)
         else:
             betas = init_coeff
             if len(init_coeff) != K + Kr:
-                raise ValueError("The size of init_coeff must be: " + K + Kr)
+                raise ValueError("The size of init_coeff must be: {}".format(K + Kr))
 
-        # Move data to GPU if GPU is being used
-        if dev.using_gpu:
-            X = dev.to_gpu(X)
-            y = dev.to_gpu(y) if not predict_mode else None
-            panel_info = dev.to_gpu(panel_info)
-            #draws = dev.to_gpu(draws)
-            if weights is not None:
-                weights = dev.to_gpu(weights)
-            if avail is not None:
-                avail = dev.to_gpu(avail)
-            if verbose > 0:
-                print("GPU processing enabled.")
-        return betas, X, y, panel_info, draws, weights, avail, Xnames
+        if dev.using_gpu and verbose > 0:
+            print("GPU processing enabled.")
+        return betas, X, y, panels, draws, weights, avail, Xnames
+
+    def _setup_batch_sizes(self, batch_size, X, draws):
+        batch_sizes = {'samples': X.shape[0], 'draws': draws.shape[-1]}
+        if batch_size is not None:
+            if isinstance(batch_size, int):
+                batch_sizes['draws'] = batch_size
+            else:
+                batch_sizes.update(batch_size)
+        return batch_sizes
 
 
     def _setup_randvars_info(self, randvars, Xnames):
@@ -402,116 +423,130 @@ class MixedLogit(ChoiceModel):
         Random and fixed coefficients are handled separately.
         """
         Bf, Br = self._transform_betas(betas, draws)  # Get fixed and rand coef
-        Xf = X[:, :, :, ~self._rvidx]  # Data for fixed coefficients
-        Xr = X[:, :, :, self._rvidx]   # Data for random coefficients
+        Xf = X[:, :, ~self._rvidx]  # Data for fixed coefficients
+        Xr = X[:, :, self._rvidx]   # Data for random coefficients
 
-        XBf = dev.cust_einsum('npjk,k -> npj', Xf, Bf)  # (N,P,J)
-        XBr = dev.cust_einsum('npjk,nkr -> npjr', Xr, Br)  # (N,P,J,R)
-        V = XBf[:, :, :, None] + XBr  # (N,P,J,R)
-        
-        V[V > MAX_COMP_EXP] = MAX_COMP_EXP
+        XBf = dev.cust_einsum('njk,k -> nj', Xf, Bf)  # (N,J)
+        XBr = dev.cust_einsum('njk,nkr -> njr', Xr, Br)  # (N,J,R)
+        V = XBf[:, :, None] + XBr  # (N,J,R)
+
         eV = dev.np.exp(V)
+        eV = eV if avail is None else eV*avail[:, :, None]  # Availablity of alts.
+        sumeV = dev.np.sum(eV, axis=1, keepdims=True)  # (N,1,R)
+        p = eV/sumeV  # (N,J,R)
+        return p  # (N,J,R)
 
-        if avail is not None:
-            eV = eV*avail[:, :, :, None]  # Acommodate availablity of alts.
+    def _batch_s_compute_probabilities(self, betas, X, draws, avail, batch_sizes):
+        """Wrapper to batch probability computation across samples"""
+        batch_size = batch_sizes['samples']
+        N = X.shape[0]
+        n_batches = N//batch_size + (1 if N % batch_size != 0 else 0)
+        p = []
+        for batch in range(n_batches):
+            s_start, s_end = batch*batch_size, batch*batch_size + batch_size
+            X_batch, avail_batch = X[s_start: s_end], avail[s_start:s_end] if avail is not None else None
+            if dev.using_gpu:
+                X_batch, avail_batch = dev.to_gpu(X_batch),  dev.to_gpu(avail_batch)
+            p_batch = self._compute_probabilities(betas, X_batch, None, draws[s_start:s_end], avail_batch)# (N_,J,R_)
+            X_batch, avail_batch = None, None
 
-        sumeV = dev.np.sum(eV, axis=2, keepdims=True)
-        sumeV[sumeV == 0] = MIN_COMP_ZERO # 
-        p = eV/sumeV  # (N,P,J,R)
-        p = p*panel_info[:, :, None, None]  # Zero for unbalanced panels
-        return p  # (N,P,J,R)
+            p_batch = dev.to_cpu(p_batch) if dev.using_gpu else p_batch
+            p.append(p_batch)
+        p = np.concatenate(p, axis=0)  # (N,J,R_)
+        return p
 
-    def _loglik_gradient(self, betas, X, y, panel_info, draws, weights, avail, batch_size):
+
+    def _loglik_gradient(self, betas, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=False):
         """Compute the log-likelihood and gradient.
 
         Fixed and random parameters are handled separately to speed up the estimation and the results are concatenated.
         """
-        if dev.using_gpu:
-            betas = dev.to_gpu(betas)
-        
-        N, R, Kf, Kr = X.shape[0], draws.shape[-1], np.sum(~self._rvidx), np.sum(self._rvidx)
+        betas = dev.to_gpu(betas)
+        batch_size = batch_sizes['draws']
+        N, J, R, Kf, Kr = X.shape[0], X.shape[1], draws.shape[-1], np.sum(~self._rvidx), np.sum(self._rvidx)
         
         gr_f, gr_b, gr_w, pch = np.zeros((N, Kf)), np.zeros((N, Kr)), np.zeros((N, Kr)), []  # Batch data
-
+        pcp_f, pcp_b, pcp_w, ch_b, ch_w = np.zeros((N, J)), np.zeros((N, J, Kr)), np.zeros((N, J, Kr)), np.zeros((N, Kr)), np.zeros((N, Kr))
         n_batches = R//batch_size + (1 if R % batch_size != 0 else 0)
+        #if not compute_grad:
         for batch in range(n_batches):
             draws_batch = draws[:, :, batch*batch_size: batch*batch_size + batch_size]
-            if dev.using_gpu:
-                draws_batch = dev.to_gpu(draws_batch)
+            draws_batch = dev.to_gpu(draws_batch)
             
-            p = self._compute_probabilities(betas, X, panel_info, draws_batch, avail)
+            prob = self._batch_s_compute_probabilities(betas, X, draws_batch, avail, batch_sizes)  # (N,J,R)
 
             # Probability of chosen alternatives
-            pch_batch = (y*p).sum(axis=2)  # (N,P,R)
-            pch_batch = self._prob_product_across_panels(pch_batch, panel_info)  # (N,R)
+            pch_batch = dev.nan_safe_sum(y*prob, axis=1)  # (N,R)
+            pch_batch = self._prob_product_across_panels(pch_batch, panels) # (Np,R)
+            pch.append(dev.to_cpu(pch_batch))
 
             # Gradient
-            Xf = X[:, :, :, ~self._rvidx]
-            Xr = X[:, :, :, self._rvidx]
-    
-            ymp = y - p  # (N,P,J,R)
-            # Gradient for fixed and random params
-            gr_f_batch = dev.cust_einsum('npjr,npjk -> nkr', ymp, Xf)
-            der = self._compute_derivatives(betas, draws_batch)
-            gr_b_batch = dev.cust_einsum('npjr,npjk -> nkr', ymp, Xr)*der
-            gr_w_batch = dev.cust_einsum('npjr,npjk -> nkr', ymp, Xr)*der*draws_batch
+            if return_gradient:
+                pch_batch = pch_batch if panels is None else pch_batch[panels]   # (N,R)
+                pcp_batch = prob*pch_batch[:, None, :]  # (N,J,R)
 
-            gr_f_batch = (gr_f_batch*pch_batch[:, None, :]).sum(axis=-1)  # (N,K,R)*(N,1,R)
-            gr_b_batch = (gr_b_batch*pch_batch[:, None, :]).sum(axis=-1)
-            gr_w_batch = (gr_w_batch*pch_batch[:, None, :]).sum(axis=-1)
+                der = self._compute_derivatives(betas, draws_batch)  # (N,K,R)
 
-            
-            #Save batch results
-            if dev.using_gpu:
-                gr_f_batch = dev.to_cpu(gr_f_batch)
-                gr_b_batch, gr_w_batch = dev.to_cpu(gr_b_batch), dev.to_cpu(gr_w_batch)
-                pch_batch = dev.to_cpu(pch_batch)
+                pcp_f_batch = pcp_batch.sum(axis=2)  # (N,J)
+                pcp_b_batch = dev.np.einsum('njr,nkr -> njk', pcp_batch, der)  # (N,J,K)
+                pcp_w_batch = dev.np.einsum('njr,nkr -> njk', pcp_batch, der*draws_batch)  # (N,J,K)
+                ch_b_batch = dev.np.einsum('nr,nkr -> nk', pch_batch, der) # (N,K)
+                ch_w_batch = dev.np.einsum('nr,nkr -> nk', pch_batch, der*draws_batch) # (N,K)
+   
+                pcp_f += dev.to_cpu(pcp_f_batch)
+                pcp_b += dev.to_cpu(pcp_b_batch)
+                pcp_w += dev.to_cpu(pcp_w_batch)
+                ch_b += dev.to_cpu(ch_b_batch)
+                ch_w += dev.to_cpu(ch_w_batch)
 
-            # Accumulate to later compute mean
-            gr_f += gr_f_batch
-            gr_b += gr_b_batch
-            gr_w += gr_w_batch
-
-            pch.append(pch_batch)
-            draws_batch, p, der, ymp = None, None, None, None  # Release GPU memory
-            
         pch = np.concatenate(pch, axis=-1) 
         # Log-likelihood
-        lik = pch.mean(axis=1)  # (N,)
-        
-        gr_f = (gr_f/R)/lik[:, None]
-        gr_b = (gr_b/R)/lik[:, None]
-        gr_w = (gr_w/R)/lik[:, None]
-
-        # Put all gradients in a single array and aggregate them
-        grad = self._concat_gradients(gr_f, gr_b, gr_w)  # (N,K)
-        if weights is not None:
-            grad = grad*weights[:, None]
-        grad = grad.sum(axis=0)  # (K,)
-
-        # Log-likelihood
+        lik = pch.mean(axis=1)  # (N, )
         loglik = np.log(lik)
-        if weights is not None:
-            loglik = loglik*weights
+        loglik = loglik if weights is None else loglik*weights
         loglik = loglik.sum()
-        
+
+        output = (-loglik, )
+
+        # Gradient
+        if return_gradient:
+            lik = lik if panels is None else lik[panels]
+            Rlik = R*lik[:, None]
+
+            Xf = X[:, :, ~self._rvidx]  # (N,J,K)
+            Xr = X[:, :, self._rvidx]  # (N,J,K)
+
+            gr_f = (Xf*y).sum(axis=1) - dev.nan_safe_sum(Xf*pcp_f[..., None], axis=1)/Rlik
+            gr_b = ((Xr*y).sum(axis=1)*ch_b - dev.nan_safe_sum(Xr*pcp_b, axis=1))/Rlik
+            gr_w = ((Xr*y).sum(axis=1)*ch_w - dev.nan_safe_sum(Xr*pcp_w, axis=1))/Rlik
+
+            # Put all gradients in a single array and aggregate them
+            grad_n = self._concat_gradients(gr_f, gr_b, gr_w)  # (N,K)
+            if weights is not None:
+                grad_n = grad_n*weights[:, None]
+            grad = grad_n.sum(axis=0)  # (K,)
+
+            output += (-grad.ravel(), )
+            output += (grad_n, )
+
         self.total_fun_eval += 1
         if self.verbose > 1:
             print(f"Evaluation {self.total_fun_eval} Log-Lik.={-loglik:.2f}")
-        return -loglik.ravel(), -grad.ravel()
+        return _unpack_tuple(output)
 
     def _concat_gradients(self, gr_f, gr_b, gr_w):
-        idx = np.append(np.where(~self._rvidx)[0], np.where(self._rvidx)[0])
-        gr_fb = np.concatenate((gr_f, gr_b), axis=1)[:, idx]
-        return np.concatenate((gr_fb, gr_w), axis=1)
+        N, Kf, Kr = len(gr_f), (~self._rvidx).sum(), self._rvidx.sum()
+        gr = np.empty((N, Kf+2*Kr))
+        gr[:, np.where(~self._rvidx)[0]] = gr_f
+        gr[:, np.where(self._rvidx)[0]] = gr_b
+        gr[:, len(self._rvidx):] = gr_w
+        return gr
 
-    def _prob_product_across_panels(self, prob, panel_info):
-        if not np.all(panel_info):  # If panel unbalanced. Not all ones
-            prob[panel_info==0, :] = 1  # Multiply by one when unbalanced
-        prob = prob.prod(axis=1)  # (N,R)
-        #MIN_COMP_ZERO = np.finfo(prob.dtype).max*.9  # ~1e-300 for float64
-        prob[prob == 0] = MIN_COMP_ZERO
-        return prob  # (N,R)
+    def _prob_product_across_panels(self, prob, panels):
+        if panels is not None:
+            panel_change_idx = np.concatenate(([0], np.where(panels[:-1] != panels[1:])[0] + 1))
+            prob = np.multiply.reduceat(prob, panel_change_idx)
+        return prob  # (Np,R)
 
     def _apply_distribution(self, betas_random):
         """Apply the mixing distribution to the random betas."""
@@ -522,39 +557,6 @@ class MixedLogit(ChoiceModel):
                 betas_random[:, k, :] = betas_random[:, k, :] *\
                     (betas_random[:, k, :] > 0)
         return betas_random
-
-    def _balance_panels(self, X, y, avail, panels):
-        """Balance panels if necessary and produce a new version of X and y.
-
-        If panels are already balanced, the same X and y are returned. This also returns panel_info, which keeps track
-        of the panels that needed balancing.
-        """
-        _, J, K = X.shape
-        _, p_obs = np.unique(panels, return_counts=True)
-        p_obs = (p_obs/J).astype(int)
-        N = len(p_obs)  # This is the new N after accounting for panels
-        P = np.max(p_obs)  # Panel length for all records
-
-        if not np.all(p_obs[0] == p_obs):  # Balancing needed
-            y = y.reshape(X.shape[0], J, 1) if y is not None else None
-            avail = avail.reshape(X.shape[0], J, 1) if avail is not None else None
-            Xbal, ybal, availbal = np.zeros((N*P, J, K)), np.zeros((N*P, J, 1)), np.zeros((N*P, J, 1))
-            panel_info = np.zeros((N, P))
-            cum_p = 0  # Cumulative sum of n_obs at every iteration
-            for n, p in enumerate(p_obs):
-                # Copy data from original to balanced version
-                Xbal[n*P:n*P + p, :, :] = X[cum_p:cum_p + p, :, :]
-                ybal[n*P:n*P + p, :, :] = y[cum_p:cum_p + p, :, :] if y is not None else None  # if in predict mode
-                availbal[n*P:n*P + p, :, :] = avail[cum_p:cum_p + p, :, :] if avail is not None else None
-                panel_info[n, :p] = np.ones(p)
-                cum_p += p
-
-        else:  # No balancing needed
-            Xbal, ybal, availbal = X, y, avail
-            panel_info = np.ones((N, P))
-        ybal = ybal if y is not None else None  # in predict mode
-        availbal = availbal if avail is not None else None
-        return Xbal, ybal, availbal, panel_info
 
     def _compute_derivatives(self, betas, draws):
         """Compute the derivatives based on the mixing distributions."""
@@ -670,18 +672,87 @@ class MixedLogit(ChoiceModel):
         """
         n_gpus = dev.get_device_count()
         if n_gpus > 0:
-            # Test a very simple example to see if CuPy is working
-            X = np.array([[2, 1], [1, 3], [3, 1], [2, 4]])
-            y = np.array([0, 1, 0, 1])
-            alts = np.array([1, 2, 1, 2])
-            ids = np.array([1, 2, 3, 4])
+            # Test a simple run of the log-likelihood to see if CuPy is working
+            X = np.array([[2, 1], [1, 3], [3, 1], [2, 4], [2, 1], [2, 4]])
+            y = np.array([0, 1, 0, 1, 0, 1])
+            N, J, K, R = 3, 2, 2, 5
+
+            betas = np.array([.1, .1, .1, .1])
+            X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
+
+            # Compute log likelihood using xlogit
             model = MixedLogit()
-            model.fit(X, y, varnames=["a", "b"], ids=ids, alts=alts,
-                      randvars={'a': 'n', 'b': 'n'}, maxiter=0, n_draws=500,
-                      verbose=0)
-            print("{} GPU device(s) available. xlogit will use "
-                  "GPU processing".format(n_gpus))
+            model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
+            draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
+            model._loglik_gradient(betas, X_, y_, None, draws, None, None,
+                                   {'samples': N, 'draws': R}, return_gradient=False)
+
+            print("{} GPU device(s) available. xlogit will use GPU processing".format(n_gpus))
             return True
         else:
             print("*** No GPU device found. Verify CuPy is properly installed")
             return False
+
+
+    def _bfgs_optimization(self, betas, X, y, panels, draws, weights, avail, batch_sizes, maxiter, ftol, gtol=1e-6, step_tol=1e-10):
+        """BFGS optimization routine."""
+        
+        res, g, grad_n = self._loglik_gradient(betas, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=True)
+        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n)) 
+        current_iteration = 0
+        convergence = False
+        step_tol_failed = False
+        while True:
+            old_g = g.copy()
+
+            d = -Hinv.dot(g)
+
+            step = 2
+            while True:
+                step = step/2
+                s = step*d
+                resnew = self._loglik_gradient(betas + s, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=False)
+                if step > step_tol:
+                    if resnew <= res or step < 1e-10:
+                        betas = betas + s
+                        resnew, gnew, grad_n = self._loglik_gradient(betas, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=True)
+                        break
+                else:
+                    step_tol_failed = True
+                    break
+
+            current_iteration += 1
+            if step_tol_failed:
+                convergence = False
+                message = "Local search could not find a higher log likelihood value"
+                break
+
+            old_res = res
+            res = resnew
+            g = gnew
+
+            if np.abs(np.dot(d, old_g)) < gtol:
+                convergence = True
+                message = "The gradients are close to zero"
+                break
+
+            if np.abs(res - old_res) < ftol:
+                convergence = True
+                message = "Succesive log-likelihood values within tolerance limits"
+                break
+
+            if current_iteration > maxiter:
+                convergence = False
+                message = "Maximum number of iterations reached without convergence"
+                break
+
+            delta_g = g - old_g
+
+            Hinv = Hinv + (((s.dot(delta_g) + (delta_g[None, :].dot(Hinv)).dot(
+                delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
+                    Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
+                    (s.dot(delta_g)))
+
+        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
+        return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
+                'hess_inv': Hinv, 'nit': current_iteration}

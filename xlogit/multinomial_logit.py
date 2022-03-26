@@ -13,6 +13,7 @@ Notations
     K : Number of variables
 """
 
+_unpack_tuple = lambda x : x if len(x) > 1 else x[0]
 
 class MultinomialLogit(ChoiceModel):
     """Class for estimation of Multinomial and Conditional Logit Models.
@@ -276,7 +277,7 @@ class MultinomialLogit(ChoiceModel):
         p = eXB/np.sum(eXB, axis=1, keepdims=True)  # (N,J)
         return p
 
-    def _loglik_gradient(self, betas, X, y, weights, avail):
+    def _loglik_gradient(self, betas, X, y, weights, avail, return_gradient=False):
         """Compute log-likelihood, gradient, and hessian."""
         p = self._compute_probabilities(betas, X, avail)
         # Log likelihood
@@ -285,27 +286,30 @@ class MultinomialLogit(ChoiceModel):
         if weights is not None:
             loglik = loglik*weights
         loglik = np.sum(loglik)
+        output = (-loglik, )
         # Individual contribution to the gradient
-        grad = np.einsum('nj,njk -> nk', (y-p), X)
-        if weights is not None:
-            grad = grad*weights[:, None]
-
-        H = np.dot(grad.T, grad)
-        Hinv = np.linalg.inv(H)
-        grad = np.sum(grad, axis=0)
-        return -loglik, -grad, Hinv
+        if return_gradient:
+            grad_n = np.einsum('nj,njk -> nk', (y-p), X)
+            grad_n = grad_n if weights is None else grad_n*weights[:, None]
+            grad = np.sum(grad_n, axis=0)
+            output += (-grad.ravel(), )
+            output += (grad_n, )
+        return _unpack_tuple(output)
 
     def summary(self):
         """Show estimation results in console."""
         super(MultinomialLogit, self).summary()
 
-    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter, ftol):
+    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter, ftol, gtol=1e-6, step_tol=1e-10):
         """BFGS optimization routine."""
-        res, g, Hinv = self._loglik_gradient(betas, X, y, weights, avail)
+        
+        res, g, grad_n = self._loglik_gradient(betas, X, y, weights, avail, return_gradient=True)
+        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n)) 
         current_iteration = 0
         convergence = False
+        step_tol_failed = False
         while True:
-            old_g = g
+            old_g = g.copy()
 
             d = -Hinv.dot(g)
 
@@ -313,30 +317,48 @@ class MultinomialLogit(ChoiceModel):
             while True:
                 step = step/2
                 s = step*d
-                betas = betas + s
-                resnew, gnew, _ = self._loglik_gradient(betas, X, y,
-                                                        weights, avail)
-                if resnew <= res or step < 1e-10:
+                resnew = self._loglik_gradient(betas + s, X, y, weights, avail,return_gradient=False)
+                if step > step_tol:
+                    if resnew <= res or step < 1e-10:
+                        betas = betas + s
+                        resnew, gnew, grad_n = self._loglik_gradient(betas, X, y, weights, avail, return_gradient=True)
+                        break
+                else:
+                    step_tol_failed = True
                     break
+
+            current_iteration += 1
+            if step_tol_failed:
+                convergence = False
+                message = "Local search could not find a higher log likelihood value"
+                break
 
             old_res = res
             res = resnew
             g = gnew
+
+            if np.abs(np.dot(d, old_g)) < gtol:
+                convergence = True
+                message = "The gradients are close to zero"
+                break
+
+            if np.abs(res - old_res) < ftol:
+                convergence = True
+                message = "Succesive log-likelihood values within tolerance limits"
+                break
+
+            if current_iteration > maxiter:
+                convergence = False
+                message = "Maximum number of iterations reached without convergence"
+                break
+
             delta_g = g - old_g
 
             Hinv = Hinv + (((s.dot(delta_g) + (delta_g[None, :].dot(Hinv)).dot(
                 delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
                     Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                     (s.dot(delta_g)))
-            current_iteration = current_iteration + 1
-            if np.abs(res - old_res) < ftol:
-                convergence = True
-                message = "Optimization completed succesfully"
-                break
-            if current_iteration > maxiter:
-                convergence = False
-                message = "The optimization reached the maximum number of iterations without convergence"
-                break
 
+        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
         return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
                 'hess_inv': Hinv, 'nit': current_iteration}

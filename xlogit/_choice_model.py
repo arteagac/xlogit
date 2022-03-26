@@ -73,6 +73,7 @@ class ChoiceModel(ABC):
         self.zvalues = self.coeff_/self.stderr
         self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=sample_size)
         self.loglikelihood = -optimization_res['fun']
+        self.estimation_message = optimization_res['message']
         self.coeff_names = coeff_names
         self.total_iter = optimization_res['nit']
         self.estim_time_sec = time() - self._fit_start_time
@@ -215,9 +216,14 @@ class ChoiceModel(ABC):
                           UserWarning)
             return
         if not self.convergence:
-            warnings.warn("WARNING: Convergence was not reached during"
-                          "The given estimates may not be reliable",
+            warnings.warn("WARNING: Convergence not reached. The estimates may not be reliable.",
                           UserWarning)
+        if self.convergence:
+            print("Optimization terminated successfully.")
+
+        print("    Message: {}".format(self.estimation_message ))
+        print("    Iterations: {}".format(self.total_iter))
+        print("    Function evaluations: {}".format(self.total_fun_eval))
         print("Estimation time= {:.1f} seconds".format(self.estim_time_sec))
         print("-"*75)
         print("{:19} {:>13} {:>13} {:>13} {:>13}"

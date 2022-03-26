@@ -34,18 +34,18 @@ class Device():
     def cust_einsum(self, expr, a, b):
         """Efficient einsum for common expressions"""
         if True:
-            if expr == 'npjk,nkr -> npjr':
-                n, p, j, k = a.shape
+            if expr == 'njk,nkr -> njr':
+                n, j, k = a.shape
                 r = b.shape[-1]
-                return self.np.matmul(a.reshape(n, p*j, k), b).reshape(n, p, j, r)
-            elif expr == 'npjk,k -> npj':
+                return self.np.matmul(a.reshape(n, j, k), b).reshape(n, j, r)
+            elif expr == 'njk,k -> nj':
                 return self.np.matmul(a, b)
-            elif expr == 'npjr,npjk -> nkr':
-                n, p, j, r = a.shape
+            elif expr == 'njr,njk -> nkr':
+                n, j, r = a.shape
                 k = b.shape[-1]
                 return self.np.matmul(
-                    b.reshape(n, p*j, k).transpose([0, 2, 1]),
-                    a.reshape(n, p*j, r))
+                    b.reshape(n, j, k).transpose([0, 2, 1]),
+                    a.reshape(n, j, r))
             else:
                 raise Exception(f"The expression {expr} is not supported by "
                                  "custeinsum")
@@ -53,10 +53,21 @@ class Device():
             
 
     def to_cpu(self, arr):
-        return cupy.asnumpy(arr)
+        if self._using_gpu and arr is not None:
+            return cupy.asnumpy(arr)
+        else:
+            return arr
+        
 
     def to_gpu(self, arr):
-        return cupy.asarray(arr)
+        if self._using_gpu and arr is not None:
+            return cupy.asarray(arr)
+        else:
+            return arr
+
+    def nan_safe_sum(self, arr, axis=0):
+        arr[numpy.isnan(arr)] = 0
+        return arr.sum(axis=axis)
 
     def get_device_count(self):
         if _gpu_available:

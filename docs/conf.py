@@ -18,11 +18,11 @@ sys.path.insert(0, os.path.abspath('../../xlogit'))
 # -- Project information -----------------------------------------------------
 
 project = 'xlogit'
-copyright = '2020, Cristian Arteaga'
+copyright = '2022, Cristian Arteaga'
 author = 'Cristian Arteaga'
 
 # The full version, including alpha/beta/rc tags
-release = '0.1.6'
+release = '0.1.7'
 
 
 # -- General configuration ---------------------------------------------------

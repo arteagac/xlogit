@@ -529,9 +529,10 @@ class MixedLogit(ChoiceModel):
             output += (-grad.ravel(), )
             output += (grad_n, )
 
-        self.total_fun_eval += 1
-        if self.verbose > 1:
-            print(f"Evaluation {self.total_fun_eval} Log-Lik.={-loglik:.2f}")
+        if not return_gradient or self.total_fun_eval == 0:
+            self.total_fun_eval += 1
+            if self.verbose > 1:
+                print(f"Evaluation {self.total_fun_eval} Log-Lik.={-loglik:.2f}")
         return _unpack_tuple(output)
 
     def _concat_gradients(self, gr_f, gr_b, gr_w):
@@ -698,7 +699,7 @@ class MixedLogit(ChoiceModel):
         """BFGS optimization routine."""
         
         res, g, grad_n = self._loglik_gradient(betas, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=True)
-        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n)) 
+        Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
         current_iteration = 0
         convergence = False
         step_tol_failed = False
@@ -753,6 +754,6 @@ class MixedLogit(ChoiceModel):
                     Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                     (s.dot(delta_g)))
 
-        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
+        Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
         return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
                 'hess_inv': Hinv, 'nit': current_iteration}

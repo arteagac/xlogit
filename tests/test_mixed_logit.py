@@ -66,7 +66,7 @@ def test__transform_betas():
 def test_fit():
     """
     Ensures the log-likelihood works for multiple iterations with the default
-    initial coefficients. The value of -0.851595 was computed by hand for
+    initial coefficients. The value of -1.473423 was computed by hand for
     comparison purposes
     """
     # There is no need to initialize a random seed as the halton draws produce
@@ -75,7 +75,7 @@ def test_fit():
     model.fit(X, y, varnames, alts, ids, randvars, n_draws=10, panels=panels,
               maxiter=0, verbose=0, halton=True, init_coeff=np.repeat(.1, 4))
 
-    assert model.loglikelihood == pytest.approx(-0.851595)
+    assert model.loglikelihood == pytest.approx(-1.473423)
     
 def test_predict():
     """

@@ -610,14 +610,14 @@ class MixedLogit(ChoiceModel):
         """Generate random uniform draws between 0 and 1."""
         return np.random.uniform(size=(sample_size, n_vars, n_draws))
 
-    def _generate_halton_draws(self, sample_size, n_draws, n_vars, shuffled=False, drop=100, primes=None):
+    def _generate_halton_draws(self, sample_size, n_draws, n_vars, shuffle=False, drop=100, primes=None):
         """Generate Halton draws for multiple random variables using different primes as base"""
         if primes is None:
             primes = [2, 3, 5, 7, 11, 13, 17, 19, 23, 29, 31, 37, 41, 43, 47, 53, 59, 61, 71, 73, 79, 83, 89, 97, 101,
                       103, 107, 109, 113, 127, 131, 137, 139, 149, 151, 157, 163, 167, 173, 179, 181, 191, 193, 197,
                       199, 211, 223, 227, 229, 233, 239, 241, 251, 257, 263, 269, 271, 277, 281, 283, 293, 307, 311]
         
-        def halton_seq(length, prime=3, shuffled=False, drop=100):
+        def halton_seq(length, prime=3, shuffle=False, drop=100):
             """Generates a halton sequence while handling memory efficiently.
             
             Memory is efficiently handled by creating a single array ``seq`` that is iteratively filled without using
@@ -639,12 +639,12 @@ class MixedLogit(ChoiceModel):
                     i += 1
                 t += 1
             seq = seq[drop:length+drop]
-            if shuffled:
+            if shuffle:
                 np.random.shuffle(seq)
             return seq
 
         draws = [halton_seq(sample_size*n_draws, prime=primes[i % len(primes)],
-                            shuffled=shuffled, drop=drop).reshape(sample_size, n_draws) for i in range(n_vars)]
+                            shuffle=shuffle, drop=drop).reshape(sample_size, n_draws) for i in range(n_vars)]
         draws = np.stack(draws, axis=1)
         return draws  # (N,Kr,R)
 

@@ -59,7 +59,7 @@ class MultinomialLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1):
+            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1, robust=False):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -142,7 +142,7 @@ class MultinomialLogit(ChoiceModel):
         # Call optimization routine
         optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail, maxiter, tol['ftol'])
         
-        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
+        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose, robust)
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
@@ -361,4 +361,4 @@ class MultinomialLogit(ChoiceModel):
 
         Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
         return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
-                'hess_inv': Hinv, 'nit': current_iteration}
+                'hess_inv': Hinv, 'nit': current_iteration, 'grad_n':grad_n, 'grad':g}

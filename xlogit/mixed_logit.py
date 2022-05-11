@@ -7,6 +7,7 @@ from ._choice_model import ChoiceModel
 from ._device import device as dev
 from .multinomial_logit import MultinomialLogit
 import numpy as np
+import numdifftools as ndt
 
 """
 Notations
@@ -72,7 +73,7 @@ class MixedLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
-            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None):
+            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False):
         """Fit Mixed Logit models.
 
         Parameters
@@ -198,7 +199,7 @@ class MixedLogit(ChoiceModel):
 
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 
-        self._post_fit(optimizat_res, coef_names, X.shape[0], verbose)
+        self._post_fit(optimizat_res, coef_names, X.shape[0], verbose, robust)
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
@@ -753,7 +754,6 @@ class MixedLogit(ChoiceModel):
                 delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
                     Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                     (s.dot(delta_g)))
-
-        Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
+        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
         return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
-                'hess_inv': Hinv, 'nit': current_iteration}
+                'hess_inv': Hinv, 'nit': current_iteration, 'grad_n':grad_n, 'grad':g}

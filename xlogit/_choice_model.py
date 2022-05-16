@@ -101,7 +101,7 @@ class ChoiceModel(ABC):
         in the Stata 16 programming manual
         """
         if(robust):
-            n, k = np.shape(grad_n)
+            n = np.shape(grad_n)[0]
             grad_n_sub = grad_n-(np.sum(grad_n, axis=0)/n) #subtract out mean gradient value
             inner = np.transpose(grad_n_sub)@grad_n_sub
             correction = ((n)/(n-1))

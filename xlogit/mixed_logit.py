@@ -2,12 +2,11 @@
 
 # pylint: disable=invalid-name
 import scipy.stats
-from scipy.optimize import minimize
+from scipy.optimize import minimize, approx_fprime
 from ._choice_model import ChoiceModel
 from ._device import device as dev
 from .multinomial_logit import MultinomialLogit
 import numpy as np
-import numdifftools as ndt
 
 """
 Notations
@@ -73,7 +72,7 @@ class MixedLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
-            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False):
+            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False, num_hess=False):
         """Fit Mixed Logit models.
 
         Parameters
@@ -195,7 +194,7 @@ class MixedLogit(ChoiceModel):
 
         batch_sizes = self._setup_batch_sizes(batch_size, X, draws)
 
-        optimizat_res = self._bfgs_optimization(betas, X, y, panels, draws, weights, avail, batch_sizes, maxiter, tol['ftol'])
+        optimizat_res = self._bfgs_optimization(betas, X, y, panels, draws, weights, avail, batch_sizes, maxiter, tol['ftol'], num_hess=num_hess)
 
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 
@@ -696,7 +695,7 @@ class MixedLogit(ChoiceModel):
             return False
 
 
-    def _bfgs_optimization(self, betas, X, y, panels, draws, weights, avail, batch_sizes, maxiter, ftol, gtol=1e-6, step_tol=1e-10):
+    def _bfgs_optimization(self, betas, X, y, panels, draws, weights, avail, batch_sizes, maxiter, ftol, gtol=1e-6, step_tol=1e-10, num_hess=False):
         """BFGS optimization routine."""
         
         res, g, grad_n = self._loglik_gradient(betas, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=True)
@@ -754,6 +753,20 @@ class MixedLogit(ChoiceModel):
                 delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
                     Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                     (s.dot(delta_g)))
-        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
+        if (num_hess):
+            K = len(betas)
+            H = np.zeros((K, K))
+            for i in range(K):
+                tempGrad = lambda x: self._loglik_gradient(x, X, y, panels, draws, weights, avail, batch_sizes, return_gradient=True)[1][i]
+                tempHessRow = approx_fprime(betas, tempGrad, epsilon=1.4901161193847656e-08)
+                # approx_fprime only handles scalars, so an anonymous function must be created
+                # Explicit epsilon comes from scipy 1.8 defaults, which don't seem to be
+                # present in earlier scipy versions
+                H[i, :] = tempHessRow
+
+            Hinv = np.linalg.inv(H)
+        else:
+            Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
+
         return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
                 'hess_inv': Hinv, 'nit': current_iteration, 'grad_n':grad_n, 'grad':g}

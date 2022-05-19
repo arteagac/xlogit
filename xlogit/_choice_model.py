@@ -29,6 +29,7 @@ class ChoiceModel(ABC):
         self.loglikelihood = None
         self.total_fun_eval = 0
         self.verbose = 1
+        self.robust = False
 
     def _reset_attributes(self):
         self.coeff_names = None
@@ -39,6 +40,7 @@ class ChoiceModel(ABC):
         self.loglikelihood = None
         self.total_fun_eval = 0
         self.verbose = 1
+        self.robust = False
 
     def _as_array(self, X, y, varnames, alts, isvars, ids, weights, panels,
                   avail):
@@ -65,11 +67,12 @@ class ChoiceModel(ABC):
         self.base_alt = self.alternatives[0] if base_alt is None else base_alt
         self.maxiter = maxiter
 
-    def _post_fit(self, optimization_res, coeff_names, sample_size, verbose=1):
+    def _post_fit(self, optimization_res, coeff_names, sample_size, verbose=1, robust=False):
         self.convergence = optimization_res['success']
         self.coeff_ = optimization_res['x']
-        self.stderr = np.sqrt(np.diag(optimization_res['hess_inv']))
         self.hess_inv = optimization_res['hess_inv']
+        self.covariance = self._estimate_covariance(optimization_res['hess_inv'], optimization_res['grad_n'], robust)
+        self.stderr = np.sqrt(np.diag(self.covariance))
         self.zvalues = self.coeff_/self.stderr
         self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=sample_size)
         self.loglikelihood = -optimization_res['fun']
@@ -80,11 +83,35 @@ class ChoiceModel(ABC):
         self.sample_size = sample_size
         self.aic = 2*len(self.coeff_) - 2*self.loglikelihood
         self.bic = np.log(sample_size)*len(self.coeff_) - 2*self.loglikelihood
+        self.grad = optimization_res['grad']
+        self.grad_n = optimization_res['grad_n']
+
 
         if not self.convergence and verbose > 0:
             print("**** The optimization did not converge after {} "
                   "iterations. ****".format(self.total_iter))
             print("Message: "+optimization_res['message'])
+
+
+    def _estimate_covariance(self, hess_inv, grad_n, robust):
+
+        """ Estimates covariance matrix. Allows for robust covariance estimation
+
+        This follows the methodology lined out in p.486-488
+        in the Stata 16 programming reference manual.
+        Benchmarked against Stata 17.
+        """
+        if(robust):
+            n = np.shape(grad_n)[0]
+            grad_n_sub = grad_n-(np.sum(grad_n, axis=0)/n) #subtract out mean gradient value
+            inner = np.transpose(grad_n_sub)@grad_n_sub
+            correction = ((n)/(n-1))
+            covariance = correction*(hess_inv@inner@hess_inv)
+            return covariance
+        else:
+            covariance = hess_inv
+
+        return covariance
 
     def _setup_design_matrix(self, X):
         """Setups and reshapes input data after adding isvars and intercept.

@@ -3,8 +3,7 @@
 
 import numpy as np
 from ._choice_model import ChoiceModel
-from scipy.optimize import minimize
-
+from scipy.optimize import minimize, approx_fprime
 """
 Notations
 ---------
@@ -59,7 +58,7 @@ class MultinomialLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1):
+            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1, robust=False, num_hess=False):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -140,9 +139,9 @@ class MultinomialLogit(ChoiceModel):
             tol.update(tol_opts)
 
         # Call optimization routine
-        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail, maxiter, tol['ftol'])
+        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail, maxiter, tol['ftol'], num_hess=num_hess)
         
-        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose)
+        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose, robust)
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
@@ -300,7 +299,7 @@ class MultinomialLogit(ChoiceModel):
         """Show estimation results in console."""
         super(MultinomialLogit, self).summary()
 
-    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter, ftol, gtol=1e-6, step_tol=1e-10):
+    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter, ftol, gtol=1e-6, step_tol=1e-10, num_hess=False):
         """BFGS optimization routine."""
         
         res, g, grad_n = self._loglik_gradient(betas, X, y, weights, avail, return_gradient=True)
@@ -359,6 +358,20 @@ class MultinomialLogit(ChoiceModel):
                     Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
                     (s.dot(delta_g)))
 
-        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
+        if (num_hess):
+            K = len(betas)
+            H = np.zeros((K,K))
+            for i in range(K):
+                tempGrad = lambda x: self._loglik_gradient(x, X, y, weights, avail, return_gradient=True)[1][i]
+                tempHessRow = approx_fprime(betas, tempGrad, epsilon=1.4901161193847656e-08)
+                #approx_fprime only handles scalars, so an anonymous function must be created
+                #Explicit epsilon comes from scipy 1.8 defaults, which don't seem to be
+                #present in earlier scipy versions
+                H[i, :] = tempHessRow
+
+            Hinv = np.linalg.inv(H)
+        else:
+            Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
+
         return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
-                'hess_inv': Hinv, 'nit': current_iteration}
+                'hess_inv': Hinv, 'nit': current_iteration, 'grad_n':grad_n, 'grad':g}

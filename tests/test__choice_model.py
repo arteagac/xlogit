@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import numpy as np
 import pytest
+from pytest import approx
 from xlogit import MultinomialLogit
 
 X = np.array([[2, 1], [1, 3], [3, 1], [2, 4], [2, 1], [2, 4]])
@@ -75,3 +76,25 @@ def test_summary():
     model = MultinomialLogit()
     with pytest.warns(UserWarning):
         model.summary()
+
+def test_estimate_covariance():
+    """
+
+    Ensures that covariance is estimated properly.
+    Output is tested against results calculated in spreadsheet software.
+
+    """
+    hess_inv = np.array([[1, .5], [.5, 4]])
+    grad_n = np.array([[0, 0], [.05, .05], [-0.05, -0.05]])
+
+    non_robust_cov = hess_inv
+    robust_cov = np.array([[0.016875, 0.050625], [0.050625, 0.151875]])
+
+    model = MultinomialLogit()
+
+    test_non_robust_cov = model._estimate_covariance(hess_inv, grad_n, False)
+    test_robust_cov = model._estimate_covariance(hess_inv, grad_n, True)
+
+    sumSquareDiff = np.sum(np.power(non_robust_cov-test_non_robust_cov,2))+np.sum(np.power(robust_cov-test_robust_cov,2))
+
+    assert sumSquareDiff == approx(0)

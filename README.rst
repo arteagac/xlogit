@@ -130,6 +130,13 @@ The current version allows estimation of:
 - Post-estimation tools for prediction and specification testing
 - Inclusion of sample weights for all of the supported models
 
+Contributors
+============
+The following contributors have tremendously helped in the enhancement and expansion of `xlogit`'s features.  
+
+- `@crforsythe <https://github.com/crforsythe>`__
+- John Helveston (`@jhelvy  <https://github.com/crforsythe>`__)
+
 Contact
 =======
 

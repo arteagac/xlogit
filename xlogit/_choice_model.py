@@ -98,7 +98,8 @@ class ChoiceModel(ABC):
         """ Estimates covariance matrix. Allows for robust covariance estimation
 
         This follows the methodology lined out in p.486-488
-        in the Stata 16 programming manual
+        in the Stata 16 programming reference manual.
+        Benchmarked against Stata 17.
         """
         if(robust):
             n = np.shape(grad_n)[0]

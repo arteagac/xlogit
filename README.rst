@@ -135,7 +135,7 @@ Contributors
 The following contributors have tremendously helped in the enhancement and expansion of `xlogit`'s features.  
 
 - `@crforsythe <https://github.com/crforsythe>`__
-- John Helveston (`@jhelvy  <https://github.com/crforsythe>`__)
+- John Helveston (`@jhelvy  <https://github.com/jhelvy>`__)
 
 Contact
 =======

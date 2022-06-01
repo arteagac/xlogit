@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 from xlogit import device
+import numpy as np
 import pytest
 
 _gpu_available = False
@@ -9,6 +10,23 @@ try:
 except ImportError:
     pass
 
+def test_cust_einsum():
+    """
+    Ensure that the custom einsum operation matches numpy's einsum
+    """
+    N, J, K, R = 10, 4, 3, 5
+    njk = np.arange(N*J*K).reshape(N, J, K)
+    nkr = np.arange(N*K*R).reshape(N, K, R)
+    njr = np.arange(N*J*R).reshape(N, J, R)
+    nj = np.arange(N*J).reshape(N, J)
+    k = np.arange(K)
+    
+    assert np.array_equal(device.cust_einsum('njk,nkr -> njr', njk, nkr),
+                          np.einsum('njk,nkr -> njr', njk, nkr))
+    assert np.array_equal(device.cust_einsum('njk,k -> nj', njk, k),
+                          np.einsum('njk,k -> nj', njk, k))
+    assert np.array_equal(device.cust_einsum('njr,njk -> nkr', njr, njk),
+                          np.einsum('njr,njk -> nkr', njr, njk))
 
 def test_disable_gpu_acceleration():
     """

@@ -33,23 +33,21 @@ class Device():
     
     def cust_einsum(self, expr, a, b):
         """Efficient einsum for common expressions"""
-        if True:
-            if expr == 'njk,nkr -> njr':
-                n, j, k = a.shape
-                r = b.shape[-1]
-                return self.np.matmul(a.reshape(n, j, k), b).reshape(n, j, r)
-            elif expr == 'njk,k -> nj':
-                return self.np.matmul(a, b)
-            elif expr == 'njr,njk -> nkr':
-                n, j, r = a.shape
-                k = b.shape[-1]
-                return self.np.matmul(
-                    b.reshape(n, j, k).transpose([0, 2, 1]),
-                    a.reshape(n, j, r))
-            else:
-                raise Exception(f"The expression {expr} is not supported by "
-                                 "custeinsum")
-        return self.np.einsum(expr, a, b)
+        if expr == 'njk,nkr -> njr':
+            n, j, k = a.shape
+            r = b.shape[-1]
+            return self.np.matmul(a.reshape(n, j, k), b).reshape(n, j, r)
+        elif expr == 'njk,k -> nj':
+            return self.np.matmul(a, b)
+        elif expr == 'njr,njk -> nkr':
+            n, j, r = a.shape
+            k = b.shape[-1]
+            return self.np.matmul(
+                b.reshape(n, j, k).transpose([0, 2, 1]),
+                a.reshape(n, j, r))
+        else:
+            return self.np.einsum(expr, a, b)
+        
             
 
     def to_cpu(self, arr):

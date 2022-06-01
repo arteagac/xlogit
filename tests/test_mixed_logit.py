@@ -28,14 +28,18 @@ def test_log_likelihood():
     X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
 
     # Compute log likelihood using xlogit
+    X_, y_ = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
+    Xd =  X_[~y_, :].reshape(N, J - 1, K) - X_[y_, :].reshape(N, 1, K) 
+
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
     draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-    obtained_loglik = model._loglik_gradient(betas, X_, y_, None, draws,
-                                            None, None, {'samples': N, 'draws': R},
+    obtained_loglik = model._loglik_gradient(betas, Xd, y_, None, draws,
+                                            None, None, R,
                                             return_gradient=False)
 
     # Compute expected log likelihood "by hand"
+    X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
     Br = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
     eXB = np.exp(np.einsum('njk,nkr -> njr', X_, Br))
     p = eXB/np.sum(eXB, axis=1, keepdims=True)
@@ -56,9 +60,8 @@ def test__transform_betas():
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
     draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-    expected_betas = betas[None, [0, 1], None] + \
-        draws*betas[None, [2, 3], None]
-    _, obtained_betas = model._transform_betas(betas, draws)
+    expected_betas = betas[None, [0, 1], None] + draws*betas[None, [2, 3], None]
+    obtained_betas = model._transform_rand_betas(betas, draws)
 
     assert np.allclose(expected_betas, obtained_betas)
 

@@ -120,9 +120,8 @@ class MultinomialLogit(ChoiceModel):
         -------
         None.
         """
-        X, y, varnames, alts, isvars, ids, weights, _, avail\
-            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None,
-                             avail)
+        X, y, varnames, alts, isvars, ids, weights, _, avail, _\
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None, avail, None)
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
@@ -205,9 +204,9 @@ class MultinomialLogit(ChoiceModel):
         """
         #=== 1. Preprocess inputs
         # Handle array-like inputs by converting everything to numpy arrays
-        X, _, varnames, alts, isvars, ids, weights, _, avail = \
-            self._as_array(X, None, varnames, alts, isvars, ids, weights, None,
-                             avail)
+        X, _, varnames, alts, isvars, ids, weights, _, avail, _\
+            = self._as_array(X, None, varnames, alts, isvars, ids, weights, None, avail, None)
+
         self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
        
         betas, X, _, weights, avail, Xnames = \

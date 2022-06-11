@@ -77,24 +77,21 @@ def test_summary():
     with pytest.warns(UserWarning):
         model.summary()
 
-def test_estimate_covariance():
+def test__robust_covariance():
     """
 
-    Ensures that covariance is estimated properly.
+    Ensures that the robust covariance is estimated properly.
     Output is tested against results calculated in spreadsheet software.
-
     """
     hess_inv = np.array([[1, .5], [.5, 4]])
     grad_n = np.array([[0, 0], [.05, .05], [-0.05, -0.05]])
 
-    non_robust_cov = hess_inv
     robust_cov = np.array([[0.016875, 0.050625], [0.050625, 0.151875]])
 
     model = MultinomialLogit()
 
-    test_non_robust_cov = model._estimate_covariance(hess_inv, grad_n, False)
-    test_robust_cov = model._estimate_covariance(hess_inv, grad_n, True)
+    test_robust_cov = model._robust_covariance(hess_inv, grad_n)
 
-    sumSquareDiff = np.sum(np.power(non_robust_cov-test_non_robust_cov,2))+np.sum(np.power(robust_cov-test_robust_cov,2))
+    sum_sq_diff = np.sum(np.power(robust_cov-test_robust_cov,2))
 
-    assert sumSquareDiff == approx(0)
+    assert sum_sq_diff == approx(0)

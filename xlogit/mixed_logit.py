@@ -2,10 +2,10 @@
 
 # pylint: disable=invalid-name
 import scipy.stats
-from scipy.optimize import minimize, approx_fprime
 from ._choice_model import ChoiceModel
 from ._device import device as dev
 from .multinomial_logit import MultinomialLogit
+from ._optimize import _minimize, _numerical_hessian
 import numpy as np
 
 """
@@ -17,16 +17,6 @@ Notations
     K : Number of variables (Kf: fixed, Kr: random)
 """
 
-MIN_COMP_ZERO = 1e-300
-MAX_COMP_EXP = 700
-
-_unpack_tuple = lambda x : x if len(x) > 1 else x[0]
-
-def batches_idx(batch_size, n_samples):
-    batch_size = n_samples if batch_size is None else min(n_samples, batch_size)
-    n_batches = n_samples//batch_size + int(n_samples % batch_size != 0)
-    return [(batch*batch_size, batch*batch_size + batch_size) \
-        for batch in range(n_batches)]
 
 class MixedLogit(ChoiceModel):
     """Class for estimation of Mixed Logit Models.
@@ -78,7 +68,8 @@ class MixedLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
-            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False, num_hess=False):
+            halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False, num_hess=False,
+            scale_factor=None, optim_method="BFGS"):
         """Fit Mixed Logit models.
 
         Parameters
@@ -162,14 +153,22 @@ class MixedLogit(ChoiceModel):
 
         batch_size : int, default=None
             Size of batches used to avoid GPU memory overflow.
+            
+        scale_factor : array-like, shape (n_samples*n_alts, ), default=None
+            Scaling variable used for non-linear models. For WTP models, this is usually the negative of 
+            the price variable.
+            
+        optim_method : str, default='BFGS'
+            Optimization method to use for model estimation. It can be `BFGS` or `L-BFGS-B`.
+            For non-linear (WTP-like) models, `L-BFGS-B` is used by default.
 
         Returns
         -------
         None.
         """
         # Handle array-like inputs by converting everything to numpy arrays
-        X, y, varnames, alts, isvars, ids, weights, panels, avail\
-            = self._as_array(X, y, varnames, alts, isvars, ids, weights,  panels, avail)
+        X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor \
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor)
 
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
 
@@ -179,34 +178,44 @@ class MixedLogit(ChoiceModel):
             mnl.fit(X, y, varnames, alts, ids, isvars=isvars, weights=weights,
                     avail=avail, base_alt=base_alt, fit_intercept=fit_intercept)
             init_coeff = np.concatenate((mnl.coeff_, np.repeat(.1, len(randvars))))
+            init_coeff = np.concatenate((init_coeff, np.array([1.0]))) if scale_factor is not None else init_coeff
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
 
-        betas, X, y, panels, draws, weights, avail, Xnames = \
+        betas, X, y, panels, draws, weights, avail, Xnames, scale = \
             self._setup_input_data(X, y, varnames, alts, ids, randvars, isvars=isvars, weights=weights, avail=avail,
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
-                                   halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts)
+                                   halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts,
+                                   scale_factor=scale_factor)
 
-        tol = {'ftol': 1e-10, 'gtol': 1e-4}
+        tol = {'ftol': 1e-10, 'gtol': 1e-6}
         if tol_opts is not None:
             tol.update(tol_opts)
-       
-        # Setup Xd as Xij - Xi* (difference between non-chosen and chosen alternatives)
-        N, J, K = X.shape
-        X, y = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
-        Xd =  X[~y, :].reshape(N, J - 1, K) - X[y, :].reshape(N, 1, K) 
-        avail = avail.reshape(N*J)[~y].reshape(N, J - 1) if avail is not None else None
 
-        optimizat_res = self._bfgs_optimization(betas, Xd, y, panels, draws, weights, avail, batch_size, maxiter, tol['ftol'], num_hess=num_hess)
+        Xd, scale_d, avail = diff_nonchosen_chosen(X, y, scale, avail)  # Setup Xd as Xij - Xi*
+        fargs = (Xd, panels, draws, weights, avail, scale_d, batch_size)
+        if scale_factor is not None:
+            optim_method = "L-BFGS-B"
+        optim_res = _minimize(self._loglik_gradient, betas, args=fargs, method=optim_method, tol=tol['ftol'],
+                              options={'gtol': tol['gtol'], 'maxiter': maxiter, 'disp': verbose > 1})        
 
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 
-        self._post_fit(optimizat_res, coef_names, X.shape[0], verbose, robust)
+        if scale_factor is not None:
+            coef_names = np.concatenate((coef_names, np.array(["_lambda"])))
+            optim_res['grad_n'] = self._loglik_gradient(optim_res['x'], *fargs, return_gradient=True)[2]
+
+        num_hess = num_hess if scale_factor is None else True
+        if num_hess:
+            optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)
+        
+        self._post_fit(optim_res, coef_names, X.shape[0], verbose, robust)
+
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
                 n_draws=1000, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False,
-                halton_opts=None):
+                halton_opts=None, scale_factor=None):
         """Predict chosen alternatives.
 
         Parameters
@@ -261,6 +270,9 @@ class MixedLogit(ChoiceModel):
 
         batch_size : int, default=None
             Size of batches used to GPU avoid memory overflow. 
+            
+        scale_factor : array-like, shape (n_samples*n_alts, ), default=None
+            Scaling variable used for non-linear WTP-like models. This is usually the negative of the price variable.
 
         return_proba : bool, default=False
             If True, also return the choice probabilities
@@ -283,27 +295,32 @@ class MixedLogit(ChoiceModel):
         """
         # Handle array-like inputs by converting everything to numpy arrays
         #=== 1. Preprocess inputs
-        X, _, varnames, alts, isvars, ids, weights, panels, avail\
-            = self._as_array(X, None, varnames, alts, isvars, ids, weights, panels, avail)
+        X, _, varnames, alts, isvars, ids, weights, panels, avail, scale_factor \
+            = self._as_array(X, None, varnames, alts, isvars, ids, weights, panels, avail, scale_factor)
         
         self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
         
-        betas, X, _, panels, draws, weights, avail, Xnames = \
+        betas, X, _, panels, draws, weights, avail, Xnames, scale = \
             self._setup_input_data(X, None, varnames, alts, ids, self.randvars,  isvars=isvars, weights=weights,
                                    avail=avail, panels=panels, init_coeff=self.coeff_, random_state=random_state,
                                    n_draws=n_draws, halton=halton, verbose=verbose, predict_mode=True,
-                                   halton_opts=halton_opts)
+                                   halton_opts=halton_opts, scale_factor=scale_factor)
         
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
+        coef_names = np.append(coef_names, "_lambda") if scale_factor is not None else coef_names
         if not np.array_equal(coef_names, self.coeff_names):
             raise ValueError("The provided 'varnames' yield coefficient names that are inconsistent with the stored "
                              "in 'self.coeff_names'")
         
         
+        lambdac = 1 if scale_factor is None else betas[-1]
+        sca = 0 if scale_factor is None else scale[:, :, None]
+        
         #=== 2. Compute choice probabilities
         Xf = X[:, :, ~self._rvidx]  # Data for fixed parameters
         Xr = X[:, :, self._rvidx]  # Data for random parameters
         betas, Xr, avail = dev.to_gpu(betas), dev.to_gpu(Xr), dev.to_gpu(avail)
+        lambdac, sca = dev.to_gpu(lambdac), dev.to_gpu(sca)
         
         # Utility for fixed parameters
         Bf = betas[np.where(~self._rvidx)[0]]  # Fixed betas
@@ -317,7 +334,7 @@ class MixedLogit(ChoiceModel):
             Br = self._transform_rand_betas(betas, draws_)  # Get random coefficients
             Vr = dev.cust_einsum("njk,nkr -> njr", Xr, Br)  # (N,J-1,R)
             
-            eV = dev.np.exp(Vf[:, :, None] + Vr)
+            eV = dev.np.exp(lambdac*(Vf[:, :, None] + Vr - sca))
             Vdr, Br = None, None # Release memory
 
             eV = eV if avail is None else eV*avail[:, :, None]  
@@ -349,7 +366,7 @@ class MixedLogit(ChoiceModel):
  
     def _setup_input_data(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,
                           panels=None, init_coeff=None, random_state=None, n_draws=200, halton=True, verbose=1,
-                          predict_mode=False, halton_opts=None):
+                          predict_mode=False, halton_opts=None, scale_factor=None):
         if random_state is not None:
             np.random.seed(random_state)
 
@@ -359,7 +376,7 @@ class MixedLogit(ChoiceModel):
         self._model_specific_validations(randvars, Xnames)
 
         N, J, K, R = X.shape[0], X.shape[1], X.shape[2], n_draws
-        Kr = len(randvars)
+        Kr, Ks = len(randvars), 1 if scale_factor is not None else 0
 
         if panels is not None:
             # Convert panel ids to indexes 
@@ -393,12 +410,14 @@ class MixedLogit(ChoiceModel):
             betas = np.repeat(.1, K + Kr)
         else:
             betas = init_coeff
-            if len(init_coeff) != K + Kr:
-                raise ValueError("The size of init_coeff must be: {}".format(K + Kr))
+            if len(init_coeff) != (K + Kr + Ks):
+                raise ValueError("The length of init_coeff must be: {}".format(K + Kr + Ks))
+        
+        scale = None if scale_factor is None else scale_factor.reshape(N, J)
 
         if dev.using_gpu and verbose > 0:
             print("GPU processing enabled.")
-        return betas, X, y, panels, draws, weights, avail, Xnames
+        return betas, X, y, panels, draws, weights, avail, Xnames, scale
 
     def _setup_randvars_info(self, randvars, Xnames):
         self.randvars = randvars
@@ -411,22 +430,27 @@ class MixedLogit(ChoiceModel):
                 self._rvidx.append(False)
         self._rvidx = np.array(self._rvidx)
 
-    def _loglik_gradient(self, betas, Xd, y, panels, draws, weights, avail, batch_size, return_gradient=False):
+    def _loglik_gradient(self, betas, Xd, panels, draws, weights, avail, scale_d, batch_size, return_gradient=True):
         """Compute the log-likelihood and gradient.
 
         Fixed and random parameters are handled separately to speed up the estimation and the results are concatenated.
         """
         N, R, Kr, Kf = Xd.shape[0], draws.shape[2], np.sum(self._rvidx), np.sum(~self._rvidx)
         
+        lambdac = 1 if scale_d is None else betas[-1]
+        Xd = Xd if scale_d is None else Xd*lambdac  # Multiply data by lambda coefficient when scaling is in use
+        
         Xdf = Xd[:, :, ~self._rvidx]  # Data for fixed parameters
         Xdr = Xd[:, :, self._rvidx]  # Data for random parameters
-        betas, Xdf, Xdr, avail = dev.to_gpu(betas), dev.to_gpu(Xdf), dev.to_gpu(Xdr), dev.to_gpu(avail)
         
+        sca = 0 if scale_d is None else (lambdac*scale_d)[:, :, None]
+        betas, Xdf, Xdr, avail, sca = dev.to_gpu(betas), dev.to_gpu(Xdf), dev.to_gpu(Xdr), dev.to_gpu(avail), dev.to_gpu(sca)
+
         # Utility for fixed parameters
         Bf = betas[np.where(~self._rvidx)[0]]  # Fixed betas
         Vdf = dev.np.einsum('njk,k -> nj', Xdf, Bf)  # (N, J-1)
         
-        proba, gr_f, gr_u, gr_s = [], np.zeros((N, Kf)), np.zeros((N, Kr)), np.zeros((N, Kr))  # Temp batching storage
+        proba, gr_f, gr_u, gr_s, gr_l = [], np.zeros((N, Kf)), np.zeros((N, Kr)), np.zeros((N, Kr)), np.zeros((N, 1))  # Temp batching storage
         for batch_start, batch_end in batches_idx(batch_size, n_samples=R):
             draws_ = dev.to_gpu(draws[:, :, batch_start: batch_end])
 
@@ -434,7 +458,7 @@ class MixedLogit(ChoiceModel):
             Br = self._transform_rand_betas(betas, draws_)  # Get random coefficients
             Vdr = dev.cust_einsum("njk,nkr -> njr", Xdr, Br)  # (N,J-1,R)
             
-            eVd = dev.np.exp(Vdf[:, :, None] + Vdr)
+            eVd = dev.np.exp(Vdf[:, :, None] + Vdr - sca)
             Vdr, Br = None, None # Release memory
             eVd = eVd if avail is None else eVd*avail[:, :, None]  # Availablity of alts.
             # TODO: Handle availability
@@ -444,14 +468,25 @@ class MixedLogit(ChoiceModel):
             if return_gradient:
                 # The gradients are stored as a summation and at the end divided by R
                 pprod = proba_*proba_ if panels is None else proba_[panels]*proba_n
-                der = self._compute_derivatives(betas, draws_)  # (N,K,R)
+                
+                # For fixed coefficients
                 dprod_f = -dev.np.einsum("njk,njr -> nkr", Xdf, eVd)  # (N,K,R)
-                dprod_r = -dev.np.einsum("njk,njr -> nkr", Xdr, eVd)  # (N,K,R)
                 der_prod_f = dprod_f*pprod[:, None, :]     # (N,K,R)
+                gr_f += dev.to_cpu((der_prod_f).sum(axis=2))  # (N,K)  
+                
+                # For random coefficients
+                der = self._compute_derivatives(betas, draws_)  # (N,K,R)
+                dprod_r = -dev.np.einsum("njk,njr -> nkr", Xdr, eVd)  # (N,K,R)
                 der_prod_r = dprod_r*pprod[:, None, :]*der   # (N,K,R)
-                gr_f += dev.to_cpu((der_prod_f).sum(axis=2))  # (N,K)        
                 gr_u += dev.to_cpu((der_prod_r).sum(axis=2))  # (N,K)
                 gr_s += dev.to_cpu((der_prod_r*draws_).sum(axis=2))  # (N,K)
+                
+                # For WTP lambda scaling
+                if scale_d is not None:
+                    dprod_l = -dev.np.einsum("njr,njr -> nr", dev.np.log(eVd)/lambdac, eVd)[:, None, :] # (N,K,R)
+                    der_prod_l = dprod_l*pprod[:, None, :]
+                    gr_l += dev.to_cpu((der_prod_l).sum(axis=2))
+                    
                 
             proba_ = proba_.sum(axis=1)  # (N, )
             proba.append(dev.to_cpu(proba_))
@@ -465,14 +500,11 @@ class MixedLogit(ChoiceModel):
             Rlik = R*lik[:, None]
             gr_f, gr_u, gr_s  = gr_f/Rlik, gr_u/Rlik, gr_s/Rlik
             grad_n = self._concat_gradients(gr_f, gr_u, gr_s)  # (N,K)
+            grad_n = grad_n if scale_d is None else np.append(grad_n, gr_l/Rlik, 1)
             grad_n = grad_n if weights is None else grad_n*weights[:, None]
             grad = grad_n.sum(axis=0)
             output += (-grad, grad_n)
-        
-        if not return_gradient or self.total_fun_eval == 0:
-            self.total_fun_eval += 1
-            if self.verbose > 1:
-                print(f"Evaluation {self.total_fun_eval} Log-Lik.={-loglik:.2f}")
+
         return _unpack_tuple(output)
 
     def _concat_gradients(self, gr_f, gr_b, gr_w):
@@ -520,7 +552,7 @@ class MixedLogit(ChoiceModel):
         """
         # Extract coeffiecients from betas array
         br_mean = betas[np.where(self._rvidx)[0]]
-        br_sd = betas[len(self._rvidx):]  # Last Kr positions
+        br_sd = betas[len(self._rvidx):len(self._rvidx) + np.sum(self._rvidx)]  # Last Kr positions
         # Compute: betas = mean + sd*draws
         betas_random = br_mean[None, :, None] + draws*br_sd[None, :, None]
         betas_random = self._apply_distribution(betas_random)
@@ -633,80 +665,21 @@ class MixedLogit(ChoiceModel):
         else:
             print("*** No GPU device found. Verify CuPy is properly installed")
             return False
+  
+_unpack_tuple = lambda x : x if len(x) > 1 else x[0]
+      
+def batches_idx(batch_size, n_samples):
+    batch_size = n_samples if batch_size is None else min(n_samples, batch_size)
+    n_batches = n_samples//batch_size + int(n_samples % batch_size != 0)
+    return [(batch*batch_size, batch*batch_size + batch_size) \
+        for batch in range(n_batches)]
 
-
-    def _bfgs_optimization(self, betas, X, y, panels, draws, weights, avail, batch_size, maxiter, ftol, gtol=1e-6, step_tol=1e-10, num_hess=False):
-        """BFGS optimization routine."""
-        
-        res, g, grad_n = self._loglik_gradient(betas, X, y, panels, draws, weights, avail, batch_size, return_gradient=True)
-        Hinv = np.linalg.pinv(np.dot(grad_n.T, grad_n))
-        current_iteration = 0
-        convergence = False
-        step_tol_failed = False
-        while True:
-            old_g = g.copy()
-
-            d = -Hinv.dot(g)
-
-            step = 2
-            while True:
-                step = step/2
-                s = step*d
-                resnew = self._loglik_gradient(betas + s, X, y, panels, draws, weights, avail, batch_size, return_gradient=False)
-                if step > step_tol:
-                    if resnew <= res or step < 1e-10:
-                        betas = betas + s
-                        resnew, gnew, grad_n = self._loglik_gradient(betas, X, y, panels, draws, weights, avail, batch_size, return_gradient=True)
-                        break
-                else:
-                    step_tol_failed = True
-                    break
-
-            current_iteration += 1
-            if step_tol_failed:
-                convergence = False
-                message = "Local search could not find a higher log likelihood value"
-                break
-
-            old_res = res
-            res = resnew
-            g = gnew
-
-            if np.abs(np.dot(d, old_g)) < gtol:
-                convergence = True
-                message = "The gradients are close to zero"
-                break
-
-            if np.abs(res - old_res) < ftol:
-                convergence = True
-                message = "Succesive log-likelihood values within tolerance limits"
-                break
-
-            if current_iteration > maxiter:
-                convergence = False
-                message = "Maximum number of iterations reached without convergence"
-                break
-
-            delta_g = g - old_g
-
-            Hinv = Hinv + (((s.dot(delta_g) + (delta_g[None, :].dot(Hinv)).dot(
-                delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
-                    Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
-                    (s.dot(delta_g)))
-        if (num_hess):
-            K = len(betas)
-            H = np.zeros((K, K))
-            for i in range(K):
-                tempGrad = lambda x: self._loglik_gradient(x, X, y, panels, draws, weights, avail, batch_size, return_gradient=True)[1][i]
-                tempHessRow = approx_fprime(betas, tempGrad, epsilon=1.4901161193847656e-08)
-                # approx_fprime only handles scalars, so an anonymous function must be created
-                # Explicit epsilon comes from scipy 1.8 defaults, which don't seem to be
-                # present in earlier scipy versions
-                H[i, :] = tempHessRow
-
-            Hinv = np.linalg.inv(H)
-        else:
-            Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
-
-        return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
-                'hess_inv': Hinv, 'nit': current_iteration, 'grad_n':grad_n, 'grad':g}
+def diff_nonchosen_chosen(X, y, scale, avail):
+    # Setup Xd as Xij - Xi* (difference between non-chosen and chosen alternatives)
+    N, J, K = X.shape
+    X, y = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
+    Xd =  X[~y, :].reshape(N, J - 1, K) - X[y, :].reshape(N, 1, K)
+    scale = scale.reshape(N*J, ) if scale is not None else None
+    scale_d = scale[~y].reshape(N, J - 1) - scale[y].reshape(N, 1) if scale is not None else None
+    avail = avail.reshape(N*J)[~y].reshape(N, J - 1) if avail is not None else None
+    return Xd, scale_d, avail

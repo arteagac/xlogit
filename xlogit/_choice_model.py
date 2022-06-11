@@ -43,7 +43,7 @@ class ChoiceModel(ABC):
         self.robust = False
 
     def _as_array(self, X, y, varnames, alts, isvars, ids, weights, panels,
-                  avail):
+                  avail, scale_factor):
         X = np.asarray(X)
         y = np.asarray(y)
         varnames = np.asarray(varnames) if varnames is not None else None
@@ -53,7 +53,8 @@ class ChoiceModel(ABC):
         weights = np.asarray(weights) if weights is not None else None
         panels = np.asarray(panels) if panels is not None else None
         avail = np.asarray(avail) if avail is not None else None
-        return X, y, varnames, alts, isvars, ids, weights, panels, avail
+        scale_factor = np.asarray(scale_factor) if scale_factor is not None else None
+        return X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor
 
     def _pre_fit(self, alts, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
@@ -67,50 +68,44 @@ class ChoiceModel(ABC):
         self.base_alt = self.alternatives[0] if base_alt is None else base_alt
         self.maxiter = maxiter
 
-    def _post_fit(self, optimization_res, coeff_names, sample_size, verbose=1, robust=False):
-        self.convergence = optimization_res['success']
-        self.coeff_ = optimization_res['x']
-        self.hess_inv = optimization_res['hess_inv']
-        self.covariance = self._estimate_covariance(optimization_res['hess_inv'], optimization_res['grad_n'], robust)
+    def _post_fit(self, optim_res, coeff_names, sample_size, verbose=1, robust=False):
+        self.convergence = optim_res['success']
+        self.coeff_ = optim_res['x']
+        self.hess_inv = optim_res['hess_inv']
+        self.covariance = self._robust_covariance(optim_res['hess_inv'], optim_res['grad_n']) \
+            if robust else optim_res['hess_inv']
         self.stderr = np.sqrt(np.diag(self.covariance))
         self.zvalues = self.coeff_/self.stderr
         self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=sample_size)
-        self.loglikelihood = -optimization_res['fun']
-        self.estimation_message = optimization_res['message']
+        self.loglikelihood = -optim_res['fun']
+        self.estimation_message = optim_res['message']
         self.coeff_names = coeff_names
-        self.total_iter = optimization_res['nit']
+        self.total_iter = optim_res['nit']
         self.estim_time_sec = time() - self._fit_start_time
         self.sample_size = sample_size
         self.aic = 2*len(self.coeff_) - 2*self.loglikelihood
         self.bic = np.log(sample_size)*len(self.coeff_) - 2*self.loglikelihood
-        self.grad = optimization_res['grad']
-        self.grad_n = optimization_res['grad_n']
+        self.grad_n = optim_res['grad_n']
 
 
         if not self.convergence and verbose > 0:
             print("**** The optimization did not converge after {} "
                   "iterations. ****".format(self.total_iter))
-            print("Message: "+optimization_res['message'])
+            print("Message: "+optim_res['message'])
 
 
-    def _estimate_covariance(self, hess_inv, grad_n, robust):
+    def _robust_covariance(self, hess_inv, grad_n):
 
-        """ Estimates covariance matrix. Allows for robust covariance estimation
+        """ Estimates the robust covariance matrix.
 
-        This follows the methodology lined out in p.486-488
-        in the Stata 16 programming reference manual.
+        This follows the methodology lined out in p.486-488 in the Stata 16 reference manual.
         Benchmarked against Stata 17.
         """
-        if(robust):
-            n = np.shape(grad_n)[0]
-            grad_n_sub = grad_n-(np.sum(grad_n, axis=0)/n) #subtract out mean gradient value
-            inner = np.transpose(grad_n_sub)@grad_n_sub
-            correction = ((n)/(n-1))
-            covariance = correction*(hess_inv@inner@hess_inv)
-            return covariance
-        else:
-            covariance = hess_inv
-
+        n = np.shape(grad_n)[0]
+        grad_n_sub = grad_n-(np.sum(grad_n, axis=0)/n) #subtract out mean gradient value
+        inner = np.transpose(grad_n_sub)@grad_n_sub
+        correction = ((n)/(n-1))
+        covariance = correction*(hess_inv@inner@hess_inv)
         return covariance
 
     def _setup_design_matrix(self, X):

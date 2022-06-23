@@ -86,6 +86,7 @@ class ChoiceModel(ABC):
         self.aic = 2*len(self.coeff_) - 2*self.loglikelihood
         self.bic = np.log(sample_size)*len(self.coeff_) - 2*self.loglikelihood
         self.grad_n = optim_res['grad_n']
+        self.total_fun_eval = optim_res['nfev']
 
 
         if not self.convergence and verbose > 0:

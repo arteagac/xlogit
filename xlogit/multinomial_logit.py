@@ -3,7 +3,8 @@
 
 import numpy as np
 from ._choice_model import ChoiceModel
-from scipy.optimize import minimize, approx_fprime
+from ._optimize import _minimize, _numerical_hessian
+
 """
 Notations
 ---------
@@ -58,7 +59,8 @@ class MultinomialLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1, robust=False, num_hess=False):
+            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1,
+            robust=False, num_hess=False, normalize_weights=False):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -102,6 +104,9 @@ class MultinomialLogit(ChoiceModel):
         maxiter : int, default=200
             Maximum number of iterations
 
+        normalize_weights: bool, default=False
+            Whether weights should be normalized
+
         random_state : int, default=None
             Random seed for numpy random generator
 
@@ -131,21 +136,24 @@ class MultinomialLogit(ChoiceModel):
                                    isvars=isvars, weights=weights, avail=avail,
                                    init_coeff=init_coeff,
                                    random_state=random_state, verbose=verbose,
-                                   predict_mode=False)
+                                   predict_mode=False, normalize_weights=normalize_weights)
 
         tol = {'ftol': 1e-10}
         if tol_opts is not None:
             tol.update(tol_opts)
 
         # Call optimization routine
-        optimizat_res = self._bfgs_optimization(betas, X, y, weights, avail, maxiter, tol['ftol'], num_hess=num_hess)
-        
-        self._post_fit(optimizat_res, Xnames, X.shape[0], verbose, robust)
+        fargs = (X, y, weights, avail)
+        optim_res = _minimize(self._loglik_gradient, betas, args=fargs, method="BFGS", tol=tol['ftol'],
+                              options={'maxiter': maxiter, 'disp': verbose > 1})  
+        if num_hess:
+            optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)
+        self._post_fit(optim_res, Xnames, X.shape[0], verbose, robust)
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
                 avail=None, random_state=None, verbose=1,
-                return_proba=False, return_freq=False):
+                return_proba=False, return_freq=False, normalize_weights=False):
         """Predict chosen alternatives.
 
         Parameters
@@ -172,6 +180,9 @@ class MultinomialLogit(ChoiceModel):
         avail: array-like, shape (n_samples*n_alts,), default=None
             Availability of alternatives for the samples. One when
             available or zero otherwise.
+
+        normalize_weights: bool, default=False
+            Whether weights should be normalized
 
         random_state : int, default=None
             Random seed for numpy random generator
@@ -214,7 +225,7 @@ class MultinomialLogit(ChoiceModel):
                                    isvars=isvars, weights=weights, avail=avail,
                                    init_coeff=self.coeff_,
                                    random_state=random_state, verbose=verbose,
-                                   predict_mode=True)
+                                   predict_mode=True, normalize_weights=normalize_weights)
         
         #=== 2. Compute choice probabilities
         proba = self._compute_probabilities(betas, X, avail)  # (N,J)
@@ -241,7 +252,8 @@ class MultinomialLogit(ChoiceModel):
 
     def _setup_input_data(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, random_state=None, verbose=1, predict_mode=False):
+            init_coeff=None, random_state=None, verbose=1, predict_mode=False,
+            normalize_weights=False):
         X, y, _, avail = self._arrange_long_format(X, y, ids, alts, None, avail)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
@@ -250,8 +262,11 @@ class MultinomialLogit(ChoiceModel):
         if random_state is not None:
             np.random.seed(random_state)
 
-        if weights is not None:
+        if weights is not None and normalize_weights:
             weights = weights*(X.shape[0]/np.sum(weights))  # Normalize weights
+                   
+        if weights is not None:  # Reshape weights to match input data
+            weights = weights[y.ravel().astype(bool)]
 
         if avail is not None:
             avail = avail.reshape(X.shape[0], X.shape[1])
@@ -297,80 +312,3 @@ class MultinomialLogit(ChoiceModel):
     def summary(self):
         """Show estimation results in console."""
         super(MultinomialLogit, self).summary()
-
-    def _bfgs_optimization(self, betas, X, y, weights, avail, maxiter, ftol, gtol=1e-6, step_tol=1e-10, num_hess=False):
-        """BFGS optimization routine."""
-        
-        res, g, grad_n = self._loglik_gradient(betas, X, y, weights, avail, return_gradient=True)
-        Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n)) 
-        current_iteration = 0
-        convergence = False
-        step_tol_failed = False
-        while True:
-            old_g = g.copy()
-
-            d = -Hinv.dot(g)
-
-            step = 2
-            while True:
-                step = step/2
-                s = step*d
-                resnew = self._loglik_gradient(betas + s, X, y, weights, avail,return_gradient=False)
-                if step > step_tol:
-                    if resnew <= res or step < 1e-10:
-                        betas = betas + s
-                        resnew, gnew, grad_n = self._loglik_gradient(betas, X, y, weights, avail, return_gradient=True)
-                        break
-                else:
-                    step_tol_failed = True
-                    break
-
-            current_iteration += 1
-            if step_tol_failed:
-                convergence = False
-                message = "Local search could not find a higher log likelihood value"
-                break
-
-            old_res = res
-            res = resnew
-            g = gnew
-
-            if np.abs(np.dot(d, old_g)) < gtol:
-                convergence = True
-                message = "The gradients are close to zero"
-                break
-
-            if np.abs(res - old_res) < ftol:
-                convergence = True
-                message = "Succesive log-likelihood values within tolerance limits"
-                break
-
-            if current_iteration > maxiter:
-                convergence = False
-                message = "Maximum number of iterations reached without convergence"
-                break
-
-            delta_g = g - old_g
-
-            Hinv = Hinv + (((s.dot(delta_g) + (delta_g[None, :].dot(Hinv)).dot(
-                delta_g))*np.outer(s, s)) / (s.dot(delta_g))**2) - ((np.outer(
-                    Hinv.dot(delta_g), s) + (np.outer(s, delta_g)).dot(Hinv)) /
-                    (s.dot(delta_g)))
-
-        if (num_hess):
-            K = len(betas)
-            H = np.zeros((K,K))
-            for i in range(K):
-                tempGrad = lambda x: self._loglik_gradient(x, X, y, weights, avail, return_gradient=True)[1][i]
-                tempHessRow = approx_fprime(betas, tempGrad, epsilon=1.4901161193847656e-08)
-                #approx_fprime only handles scalars, so an anonymous function must be created
-                #Explicit epsilon comes from scipy 1.8 defaults, which don't seem to be
-                #present in earlier scipy versions
-                H[i, :] = tempHessRow
-
-            Hinv = np.linalg.inv(H)
-        else:
-            Hinv = np.linalg.inv(np.dot(grad_n.T, grad_n))
-
-        return {'success': convergence, 'x': betas, 'fun': res, 'message': message,
-                'hess_inv': Hinv, 'nit': current_iteration, 'grad_n':grad_n, 'grad':g}

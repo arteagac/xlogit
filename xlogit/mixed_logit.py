@@ -213,7 +213,7 @@ class MixedLogit(ChoiceModel):
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 
         if scale_factor is not None:
-            coef_names = np.concatenate((coef_names, np.array(["_lambda"])))
+            coef_names = np.concatenate((coef_names, np.array(["_scale_factor"])))
 
         num_hess = num_hess if scale_factor is None else True
         if optim_method == "L-BFGS-B":
@@ -323,7 +323,7 @@ class MixedLogit(ChoiceModel):
                                    halton_opts=halton_opts, scale_factor=scale_factor, normalize_weights=normalize_weights)
         
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
-        coef_names = np.append(coef_names, "_lambda") if scale_factor is not None else coef_names
+        coef_names = np.append(coef_names, "_scale_factor") if scale_factor is not None else coef_names
         if not np.array_equal(coef_names, self.coeff_names):
             raise ValueError("The provided 'varnames' yield coefficient names that are inconsistent with the stored "
                              "in 'self.coeff_names'")

@@ -165,6 +165,12 @@ class MixedLogit(ChoiceModel):
             Optimization method to use for model estimation. It can be `BFGS` or `L-BFGS-B`.
             For non-linear (WTP-like) models, `L-BFGS-B` is used by default.
 
+        robust: bool, default=False
+            Whether robust standard errors should be computed
+
+        num_hess: bool, default=False
+            Whether numerical hessian should be used for estimation of standard errors
+
         mnl_init: bool, default=True
             Whether to initialize coefficients using estimates from a multinomial logit
         Returns
@@ -418,6 +424,9 @@ class MixedLogit(ChoiceModel):
         
         if weights is not None:  # Reshape weights to match input data
             weights = weights[y.ravel().astype(bool)]
+            if panels is not None:
+                panel_change_idx = np.concatenate(([0], np.where(panels[:-1] != panels[1:])[0] + 1))
+                weights = weights[panel_change_idx]
 
         if init_coeff is None:
             betas = np.repeat(.1, K + Kr)
@@ -514,7 +523,9 @@ class MixedLogit(ChoiceModel):
             gr_f, gr_u, gr_s  = gr_f/Rlik, gr_u/Rlik, gr_s/Rlik
             grad_n = self._concat_gradients(gr_f, gr_u, gr_s)  # (N,K)
             grad_n = grad_n if scale_d is None else np.append(grad_n, gr_l/Rlik, 1)
-            grad_n = grad_n if weights is None else grad_n*weights[:, None]
+            if weights is not None:
+                weights = weights if panels is None else weights[panels]  # (N,)
+                grad_n = grad_n*weights[:, None]
             grad = grad_n.sum(axis=0)
             output += (-grad, grad_n)
 

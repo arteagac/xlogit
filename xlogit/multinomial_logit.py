@@ -104,6 +104,12 @@ class MultinomialLogit(ChoiceModel):
         maxiter : int, default=200
             Maximum number of iterations
 
+        robust: bool, default=False
+            Whether robust standard errors should be computed
+
+        num_hess: bool, default=False
+            Whether numerical hessian should be used for estimation of standard errors
+
         normalize_weights: bool, default=False
             Whether weights should be normalized
 

@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 from xlogit import MultinomialLogit
 from pytest import approx
+from xlogit._optimize import _minimize
 
 # Setup data used for tests
 X = np.array([[2, 1], [1, 3], [3, 1], [2, 4], [2, 1], [2, 4]])
@@ -75,7 +76,9 @@ def test__bfgs_optimization():
     X_, y_ = X.reshape(N, J, K), y.reshape(N, J)
     betas = np.array([.1, .1])
     model = MultinomialLogit()
-    res = model._bfgs_optimization(betas, X_, y_, None, None, 0, 1e-5)
+    res = _minimize(model._loglik_gradient, betas, args=(X_, y_, None, None),
+                    method="BFGS", tol=1e-5, options={'maxiter': 0, 'disp': False})  
+    #res = _minimize(betas, , 0, 1e-5)
 
     assert res['fun'] == approx(0.276999)
 

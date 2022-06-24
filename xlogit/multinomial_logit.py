@@ -2,7 +2,7 @@
 # pylint: disable=line-too-long,invalid-name
 
 import numpy as np
-from ._choice_model import ChoiceModel
+from ._choice_model import ChoiceModel, diff_nonchosen_chosen
 from ._optimize import _minimize, _numerical_hessian
 
 """
@@ -60,7 +60,7 @@ class MultinomialLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
             init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1,
-            robust=False, num_hess=False, normalize_weights=False):
+            robust=False, num_hess=False, scale_factor=None):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -110,9 +110,6 @@ class MultinomialLogit(ChoiceModel):
         num_hess: bool, default=False
             Whether numerical hessian should be used for estimation of standard errors
 
-        normalize_weights: bool, default=False
-            Whether weights should be normalized
-
         random_state : int, default=None
             Random seed for numpy random generator
 
@@ -131,35 +128,41 @@ class MultinomialLogit(ChoiceModel):
         -------
         None.
         """
-        X, y, varnames, alts, isvars, ids, weights, _, avail, _\
-            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None, avail, None)
+        X, y, varnames, alts, isvars, ids, weights, _, avail, scale_factor\
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights,
+                             None, avail, scale_factor)
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
         
-        betas, X, y, weights, avail, Xnames = \
+        betas, X, y, weights, avail, Xnames, scale = \
             self._setup_input_data(X, y, varnames, alts, ids, 
                                    isvars=isvars, weights=weights, avail=avail,
                                    init_coeff=init_coeff,
                                    random_state=random_state, verbose=verbose,
-                                   predict_mode=False, normalize_weights=normalize_weights)
+                                   predict_mode=False, scale_factor=scale_factor)
 
         tol = {'ftol': 1e-10}
         if tol_opts is not None:
             tol.update(tol_opts)
 
         # Call optimization routine
-        fargs = (X, y, weights, avail)
+        Xd, scale_d, avail = diff_nonchosen_chosen(X, y, scale, avail)  # Setup Xd as Xij - Xi*
+        fargs = (Xd, scale_d, weights, avail)
         optim_res = _minimize(self._loglik_gradient, betas, args=fargs, method="BFGS", tol=tol['ftol'],
-                              options={'maxiter': maxiter, 'disp': verbose > 1})  
-        if num_hess:
+                              options={'maxiter': maxiter, 'disp': verbose > 1})
+        coef_names = Xnames
+        if scale_factor is not None:
+            coef_names = np.append(coef_names, "_scale_factor")
+
+        if num_hess or True:
             optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)
-        self._post_fit(optim_res, Xnames, X.shape[0], verbose, robust)
+        self._post_fit(optim_res, coef_names, X.shape[0], verbose, robust)
 
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
                 avail=None, random_state=None, verbose=1,
-                return_proba=False, return_freq=False, normalize_weights=False):
+                return_proba=False, return_freq=False, scale_factor=None):
         """Predict chosen alternatives.
 
         Parameters
@@ -186,9 +189,6 @@ class MultinomialLogit(ChoiceModel):
         avail: array-like, shape (n_samples*n_alts,), default=None
             Availability of alternatives for the samples. One when
             available or zero otherwise.
-
-        normalize_weights: bool, default=False
-            Whether weights should be normalized
 
         random_state : int, default=None
             Random seed for numpy random generator
@@ -221,20 +221,32 @@ class MultinomialLogit(ChoiceModel):
         """
         #=== 1. Preprocess inputs
         # Handle array-like inputs by converting everything to numpy arrays
-        X, _, varnames, alts, isvars, ids, weights, _, avail, _\
-            = self._as_array(X, None, varnames, alts, isvars, ids, weights, None, avail, None)
+        X, _, varnames, alts, isvars, ids, weights, _, avail, scale_factor\
+            = self._as_array(X, None, varnames, alts, isvars, ids, weights, None, avail, scale_factor)
 
         self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
        
-        betas, X, _, weights, avail, Xnames = \
+        betas, X, _, weights, avail, Xnames, scale = \
             self._setup_input_data(X, None, varnames, alts, ids, 
                                    isvars=isvars, weights=weights, avail=avail,
                                    init_coeff=self.coeff_,
                                    random_state=random_state, verbose=verbose,
-                                   predict_mode=True, normalize_weights=normalize_weights)
+                                   predict_mode=True, scale_factor=scale_factor)
+            
+        coeff_names = Xnames
+        coeff_names = coeff_names if scale_factor is None else np.append(coeff_names, "_scale_factor")
+        if not np.array_equal(coeff_names, self.coeff_names):
+            raise ValueError("The provided 'varnames' yield coefficient names that are inconsistent with the stored "
+                             "in 'self.coeff_names'")
         
+        lambdac = 1 if scale_factor is None else betas[-1]
+        sca = 0 if scale_factor is None else scale
+        betas = betas if scale_factor is None else betas[:-1]
+
         #=== 2. Compute choice probabilities
-        proba = self._compute_probabilities(betas, X, avail)  # (N,J)
+        eV = np.exp(lambdac*(X.dot(betas) - sca))
+        eV = eV if avail is None else eV*avail
+        proba = eV/np.sum(eV, axis=1, keepdims=True)  # (N,J)
         
         #=== 3. Compute choices
         idx_max_proba = np.argmax(proba, axis=1)
@@ -259,17 +271,14 @@ class MultinomialLogit(ChoiceModel):
     def _setup_input_data(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
             init_coeff=None, random_state=None, verbose=1, predict_mode=False,
-            normalize_weights=False):
+            scale_factor=None):
         X, y, _, avail = self._arrange_long_format(X, y, ids, alts, None, avail)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
         y = y.reshape(X.shape[0], X.shape[1])  if not predict_mode else None
-
+        
         if random_state is not None:
             np.random.seed(random_state)
-
-        if weights is not None and normalize_weights:
-            weights = weights*(X.shape[0]/np.sum(weights))  # Normalize weights
                    
         if weights is not None:  # Reshape weights to match input data
             weights = weights[y.ravel().astype(bool)]
@@ -279,36 +288,41 @@ class MultinomialLogit(ChoiceModel):
 
         if init_coeff is None:
             betas = np.repeat(.0, X.shape[2])
+            betas = betas if scale_factor is None else np.append(betas, 1.)
         else:
             betas = init_coeff
-            if len(init_coeff) != X.shape[1]:
-                raise ValueError("The size of initial_coeff must be: "
-                                 + int(X.shape[1]))
-        return betas, X, y, weights, avail, Xnames
+            n_coeff = X.shape[2] + (0 if scale_factor is None else 1)
+            if len(init_coeff) != n_coeff:
+                raise ValueError(f"The size of initial_coeff must be: {n_coeff}")
+        scale = None if scale_factor is None else scale_factor.reshape(X.shape[0], X.shape[1])
         
+        return betas, X, y, weights, avail, Xnames, scale
 
-    def _compute_probabilities(self, betas, X, avail):
-        """Compute classic logit-based probabilities."""
-        XB = X.dot(betas)
-        eXB = np.exp(XB)
-        if avail is not None:
-            eXB = eXB*avail
-        p = eXB/np.sum(eXB, axis=1, keepdims=True)  # (N,J)
-        return p
 
-    def _loglik_gradient(self, betas, X, y, weights, avail, return_gradient=False):
+    def _loglik_gradient(self, betas, Xd, scale_d, weights, avail, return_gradient=True):
         """Compute log-likelihood, gradient, and hessian."""
-        p = self._compute_probabilities(betas, X, avail)
+        lambdac = 1 if scale_d is None else betas[-1]
+        betas = betas if scale_d is None else betas[:-1]
+        Xd = Xd if scale_d is None else lambdac*Xd
+        sca = 0 if scale_d is None else lambdac*scale_d
+        #p = self._compute_probabilities(betas, X, avail)
+        Vd = np.einsum('njk,k -> nj', Xd, betas) - sca
+        eVd = np.exp(Vd)
+        eVd = eVd if avail is None else eVd*avail # Availablity of alts.
+        proba = 1/(1+eVd.sum(axis=1))  # (N, )
+        
         # Log likelihood
-        lik = np.sum(y*p, axis=1)
-        loglik = np.log(lik)
-        if weights is not None:
-            loglik = loglik*weights
+        lik = proba
+        loglik = np.log(lik) if weights is None else np.log(lik)*weights
         loglik = np.sum(loglik)
         output = (-loglik, )
         # Individual contribution to the gradient
         if return_gradient:
-            grad_n = np.einsum('nj,njk -> nk', (y-p), X)
+            grad_n = -np.einsum('njk,nj -> nk', Xd, eVd)
+            if scale_d is not None:
+                gr_l = -np.einsum('nj,nj -> n', Vd/lambdac, eVd)[:, None]
+                grad_n = np.append(grad_n, gr_l, 1)
+            grad_n = grad_n*proba[:, None]
             grad_n = grad_n if weights is None else grad_n*weights[:, None]
             grad = np.sum(grad_n, axis=0)
             output += (-grad.ravel(), )

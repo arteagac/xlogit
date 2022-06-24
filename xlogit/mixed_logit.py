@@ -2,7 +2,7 @@
 
 # pylint: disable=invalid-name
 import scipy.stats
-from ._choice_model import ChoiceModel
+from ._choice_model import ChoiceModel, diff_nonchosen_chosen
 from ._device import device as dev
 from .multinomial_logit import MultinomialLogit
 from ._optimize import _minimize, _numerical_hessian
@@ -69,7 +69,7 @@ class MixedLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
             halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False, num_hess=False,
-            scale_factor=None, optim_method="BFGS", normalize_weights=False, mnl_init=True):
+            scale_factor=None, optim_method="BFGS", mnl_init=True):
         """Fit Mixed Logit models.
 
         Parameters
@@ -157,9 +157,6 @@ class MixedLogit(ChoiceModel):
         scale_factor : array-like, shape (n_samples*n_alts, ), default=None
             Scaling variable used for non-linear models. For WTP models, this is usually the negative of 
             the price variable.
-
-        normalize_weights: bool, default=False
-            Whether weights should be normalized
             
         optim_method : str, default='BFGS'
             Optimization method to use for model estimation. It can be `BFGS` or `L-BFGS-B`.
@@ -189,7 +186,7 @@ class MixedLogit(ChoiceModel):
             mnl.fit(X, y, varnames, alts, ids, isvars=isvars, weights=weights,
                     avail=avail, base_alt=base_alt, fit_intercept=fit_intercept)
             init_coeff = np.concatenate((mnl.coeff_, np.repeat(.1, len(randvars))))
-            init_coeff = np.concatenate((init_coeff, np.array([1.0]))) if scale_factor is not None else init_coeff
+            init_coeff = init_coeff if scale_factor is None else np.append(init_coeff, 1.)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
 
@@ -197,7 +194,7 @@ class MixedLogit(ChoiceModel):
             self._setup_input_data(X, y, varnames, alts, ids, randvars, isvars=isvars, weights=weights, avail=avail,
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
                                    halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts,
-                                   scale_factor=scale_factor, normalize_weights=normalize_weights)
+                                   scale_factor=scale_factor)
 
         tol = {'ftol': 1e-10, 'gtol': 1e-6}
         if tol_opts is not None:
@@ -213,7 +210,7 @@ class MixedLogit(ChoiceModel):
         coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
 
         if scale_factor is not None:
-            coef_names = np.concatenate((coef_names, np.array(["_scale_factor"])))
+            coef_names = np.append(coef_names, "_scale_factor")
 
         num_hess = num_hess if scale_factor is None else True
         if optim_method == "L-BFGS-B":
@@ -228,7 +225,7 @@ class MixedLogit(ChoiceModel):
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
                 n_draws=1000, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False,
-                halton_opts=None, scale_factor=None, normalize_weights=False):
+                halton_opts=None, scale_factor=None):
         """Predict chosen alternatives.
 
         Parameters
@@ -286,9 +283,6 @@ class MixedLogit(ChoiceModel):
             
         scale_factor : array-like, shape (n_samples*n_alts, ), default=None
             Scaling variable used for non-linear WTP-like models. This is usually the negative of the price variable..
-        
-        normalize_weights: bool, default=False
-            Whether weights should be normalized
 
         return_proba : bool, default=False
             If True, also return the choice probabilities
@@ -320,11 +314,11 @@ class MixedLogit(ChoiceModel):
             self._setup_input_data(X, None, varnames, alts, ids, self.randvars,  isvars=isvars, weights=weights,
                                    avail=avail, panels=panels, init_coeff=self.coeff_, random_state=random_state,
                                    n_draws=n_draws, halton=halton, verbose=verbose, predict_mode=True,
-                                   halton_opts=halton_opts, scale_factor=scale_factor, normalize_weights=normalize_weights)
+                                   halton_opts=halton_opts, scale_factor=scale_factor)
         
-        coef_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
-        coef_names = np.append(coef_names, "_scale_factor") if scale_factor is not None else coef_names
-        if not np.array_equal(coef_names, self.coeff_names):
+        coeff_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
+        coeff_names = coeff_names if scale_factor is None else np.append(coeff_names, "_scale_factor")
+        if not np.array_equal(coeff_names, self.coeff_names):
             raise ValueError("The provided 'varnames' yield coefficient names that are inconsistent with the stored "
                              "in 'self.coeff_names'")
         
@@ -382,7 +376,7 @@ class MixedLogit(ChoiceModel):
  
     def _setup_input_data(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,
                           panels=None, init_coeff=None, random_state=None, n_draws=200, halton=True, verbose=1,
-                          predict_mode=False, halton_opts=None, scale_factor=None, normalize_weights=False):
+                          predict_mode=False, halton_opts=None, scale_factor=None):
         if random_state is not None:
             np.random.seed(random_state)
 
@@ -418,10 +412,7 @@ class MixedLogit(ChoiceModel):
         n_samples = N if panels is None else panels[-1] + 1
         draws = self._generate_draws(n_samples, R, halton, halton_opts=halton_opts)
         draws = draws if panels is None else draws[panels]  # (N,Kr,R)
-        
-        if weights is not None and normalize_weights:
-            weights = weights*(N/np.sum(weights))  # Normalize weights
-        
+      
         if weights is not None:  # Reshape weights to match input data
             weights = weights[y.ravel().astype(bool)]
             if panels is not None:
@@ -698,12 +689,3 @@ def batches_idx(batch_size, n_samples):
     return [(batch*batch_size, batch*batch_size + batch_size) \
         for batch in range(n_batches)]
 
-def diff_nonchosen_chosen(X, y, scale, avail):
-    # Setup Xd as Xij - Xi* (difference between non-chosen and chosen alternatives)
-    N, J, K = X.shape
-    X, y = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
-    Xd =  X[~y, :].reshape(N, J - 1, K) - X[y, :].reshape(N, 1, K)
-    scale = scale.reshape(N*J, ) if scale is not None else None
-    scale_d = scale[~y].reshape(N, J - 1) - scale[y].reshape(N, 1) if scale is not None else None
-    avail = avail.reshape(N*J)[~y].reshape(N, J - 1) if avail is not None else None
-    return Xd, scale_d, avail

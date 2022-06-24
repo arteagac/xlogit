@@ -272,3 +272,14 @@ class ChoiceModel(ABC):
         print("Log-Likelihood= {:.3f}".format(self.loglikelihood))
         print("AIC= {:.3f}".format(self.aic))
         print("BIC= {:.3f}".format(self.bic))
+
+
+def diff_nonchosen_chosen(X, y, scale, avail):
+    # Setup Xd as Xij - Xi* (difference between non-chosen and chosen alternatives)
+    N, J, K = X.shape
+    X, y = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
+    Xd =  X[~y, :].reshape(N, J - 1, K) - X[y, :].reshape(N, 1, K)
+    scale = scale.reshape(N*J, ) if scale is not None else None
+    scale_d = scale[~y].reshape(N, J - 1) - scale[y].reshape(N, 1) if scale is not None else None
+    avail = avail.reshape(N*J)[~y].reshape(N, J - 1) if avail is not None else None
+    return Xd, scale_d, avail

@@ -19,15 +19,17 @@ def test_log_likelihood():
     Computes the log-likelihood "by hand" for a simple example and ensures
     that the one returned by xlogit is the same
     """
-    X_, y_ = X.reshape(N, J, K), y.reshape(N, J)
+    X_, y_ = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
+    Xd =  X_[~y_, :].reshape(N, J - 1, K) - X_[y_, :].reshape(N, 1, K) 
     betas = np.array([.1, .1])
 
     # Compute log likelihood using xlogit
     model = MultinomialLogit()
-    obtained_loglik = model._loglik_gradient(betas, X_, y_, None,
-                                                       None)
+    obtained_loglik = model._loglik_gradient(betas, Xd, None, None, None,
+                                             return_gradient=False)
 
     # Compute expected log likelihood "by hand"
+    X_, y_ = X.reshape(N, J, K), y.reshape(N, J)
     eXB = np.exp(X_.dot(betas))
     expected_loglik = -np.sum(np.log(
         np.sum(eXB/np.sum(eXB, axis=1, keepdims=True)*y_, axis=1)))
@@ -48,7 +50,7 @@ def test_predict():
     model.coeff_ = betas
     model._isvars, model._asvars, model._varnames = [], varnames, varnames
     model._fit_intercept = False
-    model.coeff_names = np.array(["a", "b", "sd.a", "sd.b"])
+    model.coeff_names = np.array(["a", "b"])
     ypred, proba, freq = model.predict(X, varnames, alts, ids,
                                        return_proba=True,
                                        return_freq=True)
@@ -73,12 +75,12 @@ def test__bfgs_optimization():
     iteration. The value of 0.276999 was computed by hand for
     comparison purposes
     """
-    X_, y_ = X.reshape(N, J, K), y.reshape(N, J)
+    X_, y_ = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
+    Xd =  X_[~y_, :].reshape(N, J - 1, K) - X_[y_, :].reshape(N, 1, K) 
     betas = np.array([.1, .1])
     model = MultinomialLogit()
-    res = _minimize(model._loglik_gradient, betas, args=(X_, y_, None, None),
+    res = _minimize(model._loglik_gradient, betas, args=(Xd, None, None, None),
                     method="BFGS", tol=1e-5, options={'maxiter': 0, 'disp': False})  
-    #res = _minimize(betas, , 0, 1e-5)
 
     assert res['fun'] == approx(0.276999)
 

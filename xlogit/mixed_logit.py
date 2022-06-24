@@ -662,18 +662,18 @@ class MixedLogit(ChoiceModel):
         if n_gpus > 0:
             # Test a simple run of the log-likelihood to see if CuPy is working
             X = np.array([[2, 1], [1, 3], [3, 1], [2, 4], [2, 1], [2, 4]])
-            y = np.array([0, 1, 0, 1, 0, 1])
+            y = np.array([0, 1, 0, 1, 0, 1]).astype(bool)
             N, J, K, R = 3, 2, 2, 5
 
             betas = np.array([.1, .1, .1, .1])
-            X_, y_ = X.reshape(N, J, K), y.reshape(N, J, 1)
+            Xd =  X[~y, :].reshape(N, J - 1, K) - X[y, :].reshape(N, 1, K) 
 
             # Compute log likelihood using xlogit
             model = MixedLogit()
             model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
             draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-            model._loglik_gradient(betas, X_, y_, None, draws, None, None,
-                                   R, return_gradient=False)
+            model._loglik_gradient(betas, Xd, None, draws, None, None, None,
+                                   batch_size=R, return_gradient=False)
 
             print("{} GPU device(s) available. xlogit will use GPU processing".format(n_gpus))
             return True

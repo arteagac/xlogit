@@ -532,8 +532,8 @@ class MixedLogit(ChoiceModel):
 
     def _prob_product_across_panels(self, prob, panels):
         if panels is not None:
-            panel_change_idx = np.concatenate(([0], np.where(panels[:-1] != panels[1:])[0] + 1))
-            prob = dev.to_gpu(np.multiply.reduceat(dev.to_cpu(prob), panel_change_idx))
+            idx = np.concatenate(([0], np.where(panels[:-1] != panels[1:])[0] + 1, [len(prob)]))
+            prob = dev.np.vstack([prob[idx[i]:idx[i+1]].prod(axis=0) for i in range(len(idx) - 1)])
             
         return prob  # (Np,R)
 

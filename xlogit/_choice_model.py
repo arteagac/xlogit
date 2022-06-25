@@ -163,13 +163,13 @@ class ChoiceModel(ABC):
 
         return X, names
 
-    def _check_long_format_consistency(self, ids, alts, sorted_idx):
+    def _check_long_format_consistency(self, ids, alts):
         """Ensure that data in long format is consistent.
 
         It raises an error if the array of alternative indexes is incomplete
         """
-        alts = alts[sorted_idx]
-        uq_alts = np.unique(alts)
+        uq_alts, idx = np.unique(alts, return_index=True)
+        uq_alts = uq_alts[np.argsort(idx)]
         expected_alts = np.tile(uq_alts, int(len(ids)/len(uq_alts)))
         if not np.array_equal(alts, expected_alts):
             raise ValueError('inconsistent alts values in long format')
@@ -192,29 +192,6 @@ class ChoiceModel(ABC):
             else:
                 raise ValueError("inconsistent 'y' values. Make sure the "
                                  "data has one choice per sample")
-
-    def _arrange_long_format(self, X, y, ids, alts, panels=None, avail=None):
-        """Sort the input data for easy reshaping in future steps.
-
-        This ensures that that data can be safely reshaped later to do
-        everything in terms of matrix products.
-        """
-        pnls = panels if panels is not None else np.ones(len(ids))
-        alts = alts.astype(str)
-
-        cols = np.zeros(len(ids),
-                        dtype={'names': ['panel', 'id', 'alt'],
-                               'formats': ['<f4', '<f4', '<U64']})
-        cols['panel'], cols['id'], cols['alt'] = pnls, ids, alts
-        sorted_idx = np.argsort(cols, order=['panel', 'id', 'alt'])
-        X = X[sorted_idx]
-        y = y[sorted_idx] if y is not None else None
-        if panels is not None:
-            panels = panels[sorted_idx]
-        if avail is not None:
-            avail = avail[sorted_idx]
-        self._check_long_format_consistency(ids, alts, sorted_idx)
-        return X, y, panels, avail
 
     def _validate_inputs(self, X, y, alts, varnames, isvars, ids, weights):
         """Validate potential mistakes in the input data."""

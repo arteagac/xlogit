@@ -380,7 +380,7 @@ class MixedLogit(ChoiceModel):
         if random_state is not None:
             np.random.seed(random_state)
 
-        X, y, panels, avail = self._arrange_long_format(X, y, ids, alts, panels, avail)
+        self._check_long_format_consistency(ids, alts)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
         self._model_specific_validations(randvars, Xnames)
@@ -567,7 +567,7 @@ class MixedLogit(ChoiceModel):
         """
         # Extract coeffiecients from betas array
         br_mean = betas[np.where(self._rvidx)[0]]
-        br_sd = betas[len(self._rvidx):len(self._rvidx) + np.sum(self._rvidx)]  # Last Kr positions
+        br_sd = betas[len(self._rvidx):len(self._rvidx) + np.sum(self._rvidx)] 
         # Compute: betas = mean + sd*draws
         betas_random = br_mean[None, :, None] + draws*br_sd[None, :, None]
         betas_random = self._apply_distribution(betas_random)

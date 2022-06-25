@@ -18,10 +18,10 @@ def test_wide_to_long():
     Ensures a pandas dataframe is properly converted from wide to long format
     """
     expec = pd.DataFrame({'id': [1, 1, 2, 2, 3, 3, 4, 4, 5, 5],
-                          'alt': ['bus', 'car', 'bus', 'car', 'bus', 'car',
-                                  'bus', 'car', 'bus', 'car'],
-                          'time': [2, 1, 2, 1, 2, 1, 2, 1, 2, 1],
-                          'cost': [3, 0, 3, 0, 3, 0, 3, 0, 3, 0],
+                          'alt': ['car', 'bus', 'car', 'bus', 'car', 'bus',
+                                  'car', 'bus', 'car', 'bus'],
+                          'time': [1, 2, 1, 2, 1, 2, 1, 2, 1, 2],
+                          'cost': [0, 3, 0, 3, 0, 3, 0, 3, 0, 3],
                           'income': [9, 9, 8, 8, 7, 7, 6, 6, 5, 5],
                           'age': [.6, .6, .5, .5, .4, .4, .3, .3, .2, .2],
                           'y': ['bus', 'bus', 'bus', 'bus', 'bus', 'bus',

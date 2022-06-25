@@ -56,11 +56,11 @@ def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
         raise ValueError("alt_name can't be identical to a column name")
     
     # Initialize new dataframe with id and alt columns
-    newdf = pd.DataFrame()
-    newdf[id_col] = np.repeat(dataframe[id_col].values, len(alt_list))
-    newdf[alt_name] = np.tile(alt_list, len(dataframe))
+    newcols = {
+        id_col: np.repeat(dataframe[id_col].values, len(alt_list)),
+        alt_name: np.tile(alt_list, len(dataframe))
+        }
     conc_cols = []
-    
     
     # Reshape columns that vary across alternatives
     patt = "{alt}{sep}{col}" if alt_is_prefix else "{col}{sep}{alt}"
@@ -75,15 +75,16 @@ def wide_to_long(dataframe, id_col, alt_list, alt_name, varying=None,
                 count_match_patt += 1
             else:
                 series.append(np.repeat(empty_val, len(dataframe)))
-        newdf[col] = np.stack(series, axis=1).ravel()
+        newcols[col] = np.stack(series, axis=1).ravel()
     if count_match_patt == 0 and len(varying) > 0:
         raise ValueError(f"no column matches the pattern {patt}")
 
     # Reshape columns that do NOT vary across alternatives
     non_varying = [c for c in dataframe.columns if c not in conc_cols+[id_col]]
     for col in non_varying:
-        newdf[col] = np.repeat(dataframe[col].values, len(alt_list))
-    return newdf.sort_values(by=[id_col, alt_name], ignore_index=True)
+        newcols[col] = np.repeat(dataframe[col].values, len(alt_list))
+    
+    return pd.DataFrame(newcols)
 
 def lrtest(general_model, restricted_model):
     """Conducts likelihood-ratio test.

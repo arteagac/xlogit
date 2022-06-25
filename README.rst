@@ -1,6 +1,13 @@
 ===========================================================================================
-xlogit: An Open-Source Python Package for GPU-Accelerated Estimation of Mixed Logit Models.
+xlogit: A Python Package for GPU-Accelerated Estimation of Mixed Logit Models.
 ===========================================================================================
+
+.. raw:: html
+    
+    <p align="center">
+      <img width="500" src="https://raw.githubusercontent.com/arteagac/xlogit/master/docs/xlogit_logo_1000px.png">
+    </p>
+
 
 |Travis| |Coverage| |Community| |Docs| |PyPi| |License|
 

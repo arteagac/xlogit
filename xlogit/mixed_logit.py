@@ -349,7 +349,7 @@ class MixedLogit(ChoiceModel):
 
             eV = eV if avail is None else eV*avail[:, :, None]  
             proba_ = eV/dev.np.sum(eV, axis=1, keepdims=True)  # (N,J,R)
-            proba_ = self._prob_product_across_panels(proba_, panels)  # (Np,J,R)
+            # proba_ = self._prob_product_across_panels(proba_, panels)  # (Np,J,R)
 
             proba.append(dev.to_cpu(proba_))
 

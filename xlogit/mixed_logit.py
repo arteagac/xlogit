@@ -414,7 +414,7 @@ class MixedLogit(ChoiceModel):
         draws = draws if panels is None else draws[panels]  # (N,Kr,R)
       
         if weights is not None:  # Reshape weights to match input data
-            weights = weights[y.ravel().astype(bool)]
+            weights = wights.reshape(N, J)[:, 0] 
             if panels is not None:
                 panel_change_idx = np.concatenate(([0], np.where(panels[:-1] != panels[1:])[0] + 1))
                 weights = weights[panel_change_idx]

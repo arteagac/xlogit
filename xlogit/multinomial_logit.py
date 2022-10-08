@@ -275,26 +275,27 @@ class MultinomialLogit(ChoiceModel):
         self._check_long_format_consistency(ids, alts)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
-        y = y.reshape(X.shape[0], X.shape[1])  if not predict_mode else None
+        N, J, K = X.shape
+        y = y.reshape(N, J)  if not predict_mode else None
         
         if random_state is not None:
             np.random.seed(random_state)
                    
         if weights is not None:  # Reshape weights to match input data
-            weights = weights[y.ravel().astype(bool)]
+            weights = wights.reshape(N, J)[:, 0]
 
         if avail is not None:
-            avail = avail.reshape(X.shape[0], X.shape[1])
+            avail = avail.reshape(N, J)
 
         if init_coeff is None:
-            betas = np.repeat(.0, X.shape[2])
+            betas = np.repeat(.0, K)
             betas = betas if scale_factor is None else np.append(betas, 1.)
         else:
             betas = init_coeff
-            n_coeff = X.shape[2] + (0 if scale_factor is None else 1)
+            n_coeff = K + (0 if scale_factor is None else 1)
             if len(init_coeff) != n_coeff:
                 raise ValueError(f"The size of initial_coeff must be: {n_coeff}")
-        scale = None if scale_factor is None else scale_factor.reshape(X.shape[0], X.shape[1])
+        scale = None if scale_factor is None else scale_factor.reshape(N, J)
         
         return betas, X, y, weights, avail, Xnames, scale
 

@@ -282,7 +282,7 @@ class MultinomialLogit(ChoiceModel):
             np.random.seed(random_state)
                    
         if weights is not None:  # Reshape weights to match input data
-            weights = wights.reshape(N, J)[:, 0]
+            weights = weights.reshape(N, J)[:, 0]
 
         if avail is not None:
             avail = avail.reshape(N, J)

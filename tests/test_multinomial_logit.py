@@ -92,7 +92,7 @@ def test_fit():
     comparison purposes
     """
     model = MultinomialLogit()
-    model.fit(X, y, varnames=varnames, alts=alts, ids=ids,
-              maxiter=0, verbose=0)
+    model.fit(X, y, varnames=varnames, alts=alts, ids=ids, maxiter=0,
+              verbose=0, weights=np.ones(N*J))
 
     assert model.loglikelihood == approx(-0.40443136)

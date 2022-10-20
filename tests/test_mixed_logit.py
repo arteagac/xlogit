@@ -75,7 +75,8 @@ def test_fit():
     # reproducible results
     model = MixedLogit()
     model.fit(X, y, varnames, alts, ids, randvars, n_draws=10, panels=panels,
-              maxiter=0, verbose=0, halton=True, init_coeff=np.repeat(.1, 4))
+              maxiter=0, verbose=0, halton=True, init_coeff=np.repeat(.1, 4),
+              weights=np.ones(N*J))
 
     assert model.loglikelihood == pytest.approx(-1.473423)
     

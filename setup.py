@@ -5,7 +5,7 @@ with codecs.open('README.rst', encoding='utf8') as fh:
     long_description = fh.read()
 
 setuptools.setup(name='xlogit',
-                 version='0.2.2',
+                 version='0.2.3',
                  description='A Python package for GPU-accelerated ' +
                  'estimation of mixed logit models.',
                  long_description=long_description,

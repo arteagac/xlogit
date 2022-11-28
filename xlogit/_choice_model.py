@@ -76,7 +76,7 @@ class ChoiceModel(ABC):
             if robust else optim_res['hess_inv']
         self.stderr = np.sqrt(np.diag(self.covariance))
         self.zvalues = self.coeff_/self.stderr
-        self.pvalues = 2*t.pdf(-np.abs(self.zvalues), df=sample_size)
+        self.pvalues = 2*t.cdf(-np.abs(self.zvalues), df=sample_size)
         self.loglikelihood = -optim_res['fun']
         self.estimation_message = optim_res['message']
         self.coeff_names = coeff_names

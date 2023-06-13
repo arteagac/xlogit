@@ -60,7 +60,7 @@ class MultinomialLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
             init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1,
-            robust=False, num_hess=False, scale_factor=None):
+            robust=False, num_hess=False, scale_factor=None, addit=None):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -128,27 +128,26 @@ class MultinomialLogit(ChoiceModel):
         -------
         None.
         """
-        X, y, varnames, alts, isvars, ids, weights, _, avail, scale_factor\
-            = self._as_array(X, y, varnames, alts, isvars, ids, weights,
-                             None, avail, scale_factor)
+        X, y, varnames, alts, isvars, ids, weights, _, avail, scale_factor, addit \
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights, None, avail, scale_factor, addit)
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
         
-        betas, X, y, weights, avail, Xnames, scale = \
+        betas, X, y, weights, avail, Xnames, scale, addit = \
             self._setup_input_data(X, y, varnames, alts, ids, 
                                    isvars=isvars, weights=weights, avail=avail,
                                    init_coeff=init_coeff,
                                    random_state=random_state, verbose=verbose,
-                                   predict_mode=False, scale_factor=scale_factor)
+                                   predict_mode=False, scale_factor=scale_factor, addit=addit)
 
         tol = {'ftol': 1e-10}
         if tol_opts is not None:
             tol.update(tol_opts)
 
         # Call optimization routine
-        Xd, scale_d, avail = diff_nonchosen_chosen(X, y, scale, avail)  # Setup Xd as Xij - Xi*
-        fargs = (Xd, scale_d, weights, avail)
+        Xd, scale_d, addit_d, avail = diff_nonchosen_chosen(X, y, scale, addit, avail)  # Setup Xd as Xij - Xi*
+        fargs = (Xd, scale_d, addit_d, weights, avail)
         optim_res = _minimize(self._loglik_gradient, betas, args=fargs, method="BFGS", tol=tol['ftol'],
                               options={'maxiter': maxiter, 'disp': verbose > 1})
         coef_names = Xnames
@@ -162,7 +161,7 @@ class MultinomialLogit(ChoiceModel):
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None,
                 avail=None, random_state=None, verbose=1,
-                return_proba=False, return_freq=False, scale_factor=None):
+                return_proba=False, return_freq=False, scale_factor=None, addit=None):
         """Predict chosen alternatives.
 
         Parameters
@@ -221,17 +220,17 @@ class MultinomialLogit(ChoiceModel):
         """
         #=== 1. Preprocess inputs
         # Handle array-like inputs by converting everything to numpy arrays
-        X, _, varnames, alts, isvars, ids, weights, _, avail, scale_factor\
-            = self._as_array(X, None, varnames, alts, isvars, ids, weights, None, avail, scale_factor)
+        X, _, varnames, alts, isvars, ids, weights, _, avail, scale_factor, addit \
+            = self._as_array(X, None, varnames, alts, isvars, ids, weights, None, avail, scale_factor, addit)
 
         self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
        
-        betas, X, _, weights, avail, Xnames, scale = \
+        betas, X, _, weights, avail, Xnames, scale, addit = \
             self._setup_input_data(X, None, varnames, alts, ids, 
                                    isvars=isvars, weights=weights, avail=avail,
                                    init_coeff=self.coeff_,
                                    random_state=random_state, verbose=verbose,
-                                   predict_mode=True, scale_factor=scale_factor)
+                                   predict_mode=True, scale_factor=scale_factor, addit=addit)
             
         coeff_names = Xnames
         coeff_names = coeff_names if scale_factor is None else np.append(coeff_names, "_scale_factor")
@@ -241,10 +240,11 @@ class MultinomialLogit(ChoiceModel):
         
         lambdac = 1 if scale_factor is None else betas[-1]
         sca = 0 if scale_factor is None else scale
+        addit = 0 if addit is None else addit
         betas = betas if scale_factor is None else betas[:-1]
 
         #=== 2. Compute choice probabilities
-        eV = np.exp(lambdac*(X.dot(betas) - sca))
+        eV = np.exp(lambdac*(X.dot(betas) - sca + addit))
         eV = eV if avail is None else eV*avail
         proba = eV/np.sum(eV, axis=1, keepdims=True)  # (N,J)
         
@@ -271,7 +271,7 @@ class MultinomialLogit(ChoiceModel):
     def _setup_input_data(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
             init_coeff=None, random_state=None, verbose=1, predict_mode=False,
-            scale_factor=None):
+            scale_factor=None, addit=None):
         self._check_long_format_consistency(ids, alts)
         y = self._format_choice_var(y, alts) if not predict_mode else None
         X, Xnames = self._setup_design_matrix(X)
@@ -296,18 +296,20 @@ class MultinomialLogit(ChoiceModel):
             if len(init_coeff) != n_coeff:
                 raise ValueError(f"The size of initial_coeff must be: {n_coeff}")
         scale = None if scale_factor is None else scale_factor.reshape(N, J)
+        addit = None if addit is None else addit.reshape(N, J)
         
-        return betas, X, y, weights, avail, Xnames, scale
+        return betas, X, y, weights, avail, Xnames, scale, addit
 
 
-    def _loglik_gradient(self, betas, Xd, scale_d, weights, avail, return_gradient=True):
+    def _loglik_gradient(self, betas, Xd, scale_d, addit_d, weights, avail, return_gradient=True):
         """Compute log-likelihood, gradient, and hessian."""
         lambdac = 1 if scale_d is None else betas[-1]
         betas = betas if scale_d is None else betas[:-1]
         Xd = Xd if scale_d is None else lambdac*Xd
-        sca = 0 if scale_d is None else lambdac*scale_d
+        scad = 0 if scale_d is None else lambdac*scale_d
+        additd = 0 if addit_d is None else lambdac*addit_d
         #p = self._compute_probabilities(betas, X, avail)
-        Vd = np.einsum('njk,k -> nj', Xd, betas) - sca
+        Vd = np.einsum('njk,k -> nj', Xd, betas) - scad + additd
         eVd = np.exp(Vd)
         eVd = eVd if avail is None else eVd*avail # Availablity of alts.
         proba = 1/(1+eVd.sum(axis=1))  # (N, )

@@ -25,7 +25,7 @@ def test_log_likelihood():
 
     # Compute log likelihood using xlogit
     model = MultinomialLogit()
-    obtained_loglik = model._loglik_gradient(betas, Xd, None, None, None,
+    obtained_loglik = model._loglik_gradient(betas, Xd, None, None, None, None,
                                              return_gradient=False)
 
     # Compute expected log likelihood "by hand"
@@ -79,7 +79,7 @@ def test__bfgs_optimization():
     Xd =  X_[~y_, :].reshape(N, J - 1, K) - X_[y_, :].reshape(N, 1, K) 
     betas = np.array([.1, .1])
     model = MultinomialLogit()
-    res = _minimize(model._loglik_gradient, betas, args=(Xd, None, None, None),
+    res = _minimize(model._loglik_gradient, betas, args=(Xd, None, None, None, None),
                     method="BFGS", tol=1e-5, options={'maxiter': 0, 'disp': False})  
 
     assert res['fun'] == approx(0.276999)

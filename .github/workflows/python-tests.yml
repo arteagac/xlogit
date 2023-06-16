@@ -30,6 +30,8 @@ jobs:
         pip install -r requirements.txt
     - name: Test with pytest
       run: |
-        python -m pytest --cov=xlogit
+        python -m pytest --cov-report lcov:cov.info --cov=xlogit
     - name: Coveralls
       uses: coverallsapp/github-action@v2
+      with:
+        file: cov.info

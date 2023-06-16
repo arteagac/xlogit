@@ -43,7 +43,7 @@ class ChoiceModel(ABC):
         self.robust = False
 
     def _as_array(self, X, y, varnames, alts, isvars, ids, weights, panels,
-                  avail, scale_factor):
+                  avail, scale_factor, addit):
         X = np.asarray(X)
         y = np.asarray(y)
         varnames = np.asarray(varnames) if varnames is not None else None
@@ -54,7 +54,8 @@ class ChoiceModel(ABC):
         panels = np.asarray(panels) if panels is not None else None
         avail = np.asarray(avail) if avail is not None else None
         scale_factor = np.asarray(scale_factor) if scale_factor is not None else None
-        return X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor
+        addit = np.asarray(addit) if addit is not None else None
+        return X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor, addit
 
     def _pre_fit(self, alts, varnames, isvars, base_alt,
                  fit_intercept, maxiter):
@@ -251,12 +252,14 @@ class ChoiceModel(ABC):
         print("BIC= {:.3f}".format(self.bic))
 
 
-def diff_nonchosen_chosen(X, y, scale, avail):
+def diff_nonchosen_chosen(X, y, scale, addit, avail):
     # Setup Xd as Xij - Xi* (difference between non-chosen and chosen alternatives)
     N, J, K = X.shape
     X, y = X.reshape(N*J, K), y.astype(bool).reshape(N*J, )
     Xd =  X[~y, :].reshape(N, J - 1, K) - X[y, :].reshape(N, 1, K)
     scale = scale.reshape(N*J, ) if scale is not None else None
     scale_d = scale[~y].reshape(N, J - 1) - scale[y].reshape(N, 1) if scale is not None else None
+    addit = addit.reshape(N*J, ) if addit is not None else None
+    addit_d = addit[~y].reshape(N, J - 1) - addit[y].reshape(N, 1) if addit is not None else None
     avail = avail.reshape(N*J)[~y].reshape(N, J - 1) if avail is not None else None
-    return Xd, scale_d, avail
+    return Xd, scale_d, addit_d, avail

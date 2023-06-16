@@ -34,7 +34,7 @@ def test_log_likelihood():
     model = MixedLogit()
     model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
     draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-    obtained_loglik = model._loglik_gradient(betas, Xd, None, draws, None, None, None, R,
+    obtained_loglik = model._loglik_gradient(betas, Xd, None, draws, None, None, None, None, R,
                                             return_gradient=False)
 
     # Compute expected log likelihood "by hand"

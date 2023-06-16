@@ -69,7 +69,7 @@ class MixedLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
             halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False, num_hess=False,
-            scale_factor=None, optim_method="BFGS", mnl_init=True):
+            scale_factor=None, optim_method="BFGS", mnl_init=True, addit=None):
         """Fit Mixed Logit models.
 
         Parameters
@@ -175,33 +175,33 @@ class MixedLogit(ChoiceModel):
         None.
         """
         # Handle array-like inputs by converting everything to numpy arrays
-        X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor \
-            = self._as_array(X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor)
+        X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor, addit \
+            = self._as_array(X, y, varnames, alts, isvars, ids, weights, panels, avail, scale_factor, addit)
 
         self._validate_inputs(X, y, alts, varnames, isvars, ids, weights)
 
         if mnl_init and init_coeff is None:
             # Initialize coefficients using a multinomial logit model
             mnl = MultinomialLogit()
-            mnl.fit(X, y, varnames, alts, ids, isvars=isvars, weights=weights,
+            mnl.fit(X, y, varnames, alts, ids, isvars=isvars, weights=weights, addit=addit,
                     avail=avail, base_alt=base_alt, fit_intercept=fit_intercept)
             init_coeff = np.concatenate((mnl.coeff_, np.repeat(.1, len(randvars))))
             init_coeff = init_coeff if scale_factor is None else np.append(init_coeff, 1.)
 
         self._pre_fit(alts, varnames, isvars, base_alt, fit_intercept, maxiter)
 
-        betas, X, y, panels, draws, weights, avail, Xnames, scale = \
+        betas, X, y, panels, draws, weights, avail, Xnames, scale, addit = \
             self._setup_input_data(X, y, varnames, alts, ids, randvars, isvars=isvars, weights=weights, avail=avail,
                                    panels=panels, init_coeff=init_coeff, random_state=random_state, n_draws=n_draws,
                                    halton=halton, verbose=verbose, predict_mode=False, halton_opts=halton_opts,
-                                   scale_factor=scale_factor)
+                                   scale_factor=scale_factor, addit=addit)
 
         tol = {'ftol': 1e-10, 'gtol': 1e-6}
         if tol_opts is not None:
             tol.update(tol_opts)
 
-        Xd, scale_d, avail = diff_nonchosen_chosen(X, y, scale, avail)  # Setup Xd as Xij - Xi*
-        fargs = (Xd, panels, draws, weights, avail, scale_d, batch_size)
+        Xd, scale_d, addit_d, avail = diff_nonchosen_chosen(X, y, scale, addit, avail)  # Setup Xd as Xij - Xi*
+        fargs = (Xd, panels, draws, weights, avail, scale_d, addit_d, batch_size)
         if scale_factor is not None:
             optim_method = "L-BFGS-B"
         optim_res = _minimize(self._loglik_gradient, betas, args=fargs, method=optim_method, tol=tol['ftol'],
@@ -225,7 +225,7 @@ class MixedLogit(ChoiceModel):
 
     def predict(self, X, varnames, alts, ids, isvars=None, weights=None, avail=None,  panels=None, random_state=None,
                 n_draws=1000, halton=True, verbose=1, batch_size=None, return_proba=False, return_freq=False,
-                halton_opts=None, scale_factor=None):
+                halton_opts=None, scale_factor=None, addit=None):
         """Predict chosen alternatives.
 
         Parameters
@@ -305,16 +305,16 @@ class MixedLogit(ChoiceModel):
         """
         # Handle array-like inputs by converting everything to numpy arrays
         #=== 1. Preprocess inputs
-        X, _, varnames, alts, isvars, ids, weights, panels, avail, scale_factor \
-            = self._as_array(X, None, varnames, alts, isvars, ids, weights, panels, avail, scale_factor)
+        X, _, varnames, alts, isvars, ids, weights, panels, avail, scale_factor, addit \
+            = self._as_array(X, None, varnames, alts, isvars, ids, weights, panels, avail, scale_factor, addit)
         
         self._validate_inputs(X, None, alts, varnames, isvars, ids, weights)
         
-        betas, X, _, panels, draws, weights, avail, Xnames, scale = \
+        betas, X, _, panels, draws, weights, avail, Xnames, scale, addit = \
             self._setup_input_data(X, None, varnames, alts, ids, self.randvars,  isvars=isvars, weights=weights,
                                    avail=avail, panels=panels, init_coeff=self.coeff_, random_state=random_state,
                                    n_draws=n_draws, halton=halton, verbose=verbose, predict_mode=True,
-                                   halton_opts=halton_opts, scale_factor=scale_factor)
+                                   halton_opts=halton_opts, scale_factor=scale_factor, addit=addit)
         
         coeff_names = np.append(Xnames, np.char.add("sd.", Xnames[self._rvidx]))
         coeff_names = coeff_names if scale_factor is None else np.append(coeff_names, "_scale_factor")
@@ -325,12 +325,13 @@ class MixedLogit(ChoiceModel):
         
         lambdac = 1 if scale_factor is None else betas[-1]
         sca = 0 if scale_factor is None else scale[:, :, None]
+        addit = 0 if addit is None else addit[:, :, None]
         
         #=== 2. Compute choice probabilities
         Xf = X[:, :, ~self._rvidx]  # Data for fixed parameters
         Xr = X[:, :, self._rvidx]  # Data for random parameters
         betas, Xr, avail = dev.to_gpu(betas), dev.to_gpu(Xr), dev.to_gpu(avail)
-        lambdac, sca = dev.to_gpu(lambdac), dev.to_gpu(sca)
+        lambdac, sca, addit = dev.to_gpu(lambdac), dev.to_gpu(sca), dev.to_gpu(addit)
         
         # Utility for fixed parameters
         Bf = betas[np.where(~self._rvidx)[0]]  # Fixed betas
@@ -344,7 +345,7 @@ class MixedLogit(ChoiceModel):
             Br = self._transform_rand_betas(betas, draws_)  # Get random coefficients
             Vr = dev.cust_einsum("njk,nkr -> njr", Xr, Br)  # (N,J-1,R)
             
-            eV = dev.np.exp(lambdac*(Vf[:, :, None] + Vr - sca))
+            eV = dev.np.exp(lambdac*(Vf[:, :, None] + Vr - sca + addit))
             Vdr, Br = None, None # Release memory
 
             eV = eV if avail is None else eV*avail[:, :, None]  
@@ -376,7 +377,7 @@ class MixedLogit(ChoiceModel):
  
     def _setup_input_data(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,
                           panels=None, init_coeff=None, random_state=None, n_draws=200, halton=True, verbose=1,
-                          predict_mode=False, halton_opts=None, scale_factor=None):
+                          predict_mode=False, halton_opts=None, scale_factor=None, addit=None):
         if random_state is not None:
             np.random.seed(random_state)
 
@@ -427,10 +428,11 @@ class MixedLogit(ChoiceModel):
                 raise ValueError("The length of init_coeff must be: {}".format(K + Kr + Ks))
         
         scale = None if scale_factor is None else scale_factor.reshape(N, J)
+        addit = None if addit is None else addit.reshape(N, J)
 
         if dev.using_gpu and verbose > 0:
             print("GPU processing enabled.")
-        return betas, X, y, panels, draws, weights, avail, Xnames, scale
+        return betas, X, y, panels, draws, weights, avail, Xnames, scale, addit
 
     def _setup_randvars_info(self, randvars, Xnames):
         self.randvars = randvars
@@ -443,7 +445,7 @@ class MixedLogit(ChoiceModel):
                 self._rvidx.append(False)
         self._rvidx = np.array(self._rvidx)
 
-    def _loglik_gradient(self, betas, Xd, panels, draws, weights, avail, scale_d, batch_size, return_gradient=True):
+    def _loglik_gradient(self, betas, Xd, panels, draws, weights, avail, scale_d, addit_d, batch_size, return_gradient=True):
         """Compute the log-likelihood and gradient.
 
         Fixed and random parameters are handled separately to speed up the estimation and the results are concatenated.
@@ -456,8 +458,9 @@ class MixedLogit(ChoiceModel):
         Xdf = Xd[:, :, ~self._rvidx]  # Data for fixed parameters
         Xdr = Xd[:, :, self._rvidx]  # Data for random parameters
         
-        sca = 0 if scale_d is None else (lambdac*scale_d)[:, :, None]
-        betas, Xdf, Xdr, avail, sca = dev.to_gpu(betas), dev.to_gpu(Xdf), dev.to_gpu(Xdr), dev.to_gpu(avail), dev.to_gpu(sca)
+        scad = 0 if scale_d is None else (lambdac*scale_d)[:, :, None]
+        additd = 0 if addit_d is None else (lambdac*addit_d)[:, :, None]
+        betas, Xdf, Xdr, avail, scad, additd = dev.to_gpu(betas), dev.to_gpu(Xdf), dev.to_gpu(Xdr), dev.to_gpu(avail), dev.to_gpu(scad), dev.to_gpu(additd)
 
         # Utility for fixed parameters
         Bf = betas[np.where(~self._rvidx)[0]]  # Fixed betas
@@ -471,7 +474,7 @@ class MixedLogit(ChoiceModel):
             Br = self._transform_rand_betas(betas, draws_)  # Get random coefficients
             Vdr = dev.cust_einsum("njk,nkr -> njr", Xdr, Br)  # (N,J-1,R)
             
-            eVd = dev.np.exp(Vdf[:, :, None] + Vdr - sca)
+            eVd = dev.np.exp(Vdf[:, :, None] + Vdr - scad + additd)
             Vdr, Br = None, None # Release memory
             eVd = eVd if avail is None else eVd*avail[:, :, None]  # Availablity of alts.
             # TODO: Handle availability
@@ -672,7 +675,7 @@ class MixedLogit(ChoiceModel):
             model = MixedLogit()
             model._rvidx,  model._rvdist = np.array([True, True]), np.array(['n', 'n'])
             draws = model._generate_halton_draws(N, R, K)  # (N,Kr,R)
-            model._loglik_gradient(betas, Xd, None, draws, None, None, None,
+            model._loglik_gradient(betas, Xd, None, draws, None, None, None, None,
                                    batch_size=R, return_gradient=False)
 
             print("{} GPU device(s) available. xlogit will use GPU processing".format(n_gpus))

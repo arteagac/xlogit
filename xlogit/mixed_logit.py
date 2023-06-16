@@ -158,6 +158,9 @@ class MixedLogit(ChoiceModel):
             Scaling variable used for non-linear models. For WTP models, this is usually the negative of 
             the price variable.
             
+        addit : array-like, shape (n_samples*n_alts, ), default=None
+            Additive term to model coefficients kept fixed during estimation.
+            
         optim_method : str, default='BFGS'
             Optimization method to use for model estimation. It can be `BFGS` or `L-BFGS-B`.
             For non-linear (WTP-like) models, `L-BFGS-B` is used by default.
@@ -283,7 +286,10 @@ class MixedLogit(ChoiceModel):
             
         scale_factor : array-like, shape (n_samples*n_alts, ), default=None
             Scaling variable used for non-linear WTP-like models. This is usually the negative of the price variable..
-
+            
+        addit : array-like, shape (n_samples*n_alts, ), default=None
+            Additive term to model coefficients kept fixed during estimation.
+            
         return_proba : bool, default=False
             If True, also return the choice probabilities
 

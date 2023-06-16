@@ -91,7 +91,10 @@ class MultinomialLogit(ChoiceModel):
         avail: array-like, shape (n_samples*n_alts,), default=None
             Availability of alternatives for the samples. One when
             available or zero otherwise.
-
+            
+        addit : array-like, shape (n_samples*n_alts, ), default=None
+            Additive term to model coefficients kept fixed during estimation.
+            
         base_alt : int, float or str, default=None
             Base alternative
 
@@ -188,7 +191,10 @@ class MultinomialLogit(ChoiceModel):
         avail: array-like, shape (n_samples*n_alts,), default=None
             Availability of alternatives for the samples. One when
             available or zero otherwise.
-
+            
+        addit : array-like, shape (n_samples*n_alts, ), default=None
+            Additive term to model coefficients kept fixed during estimation.
+            
         random_state : int, default=None
             Random seed for numpy random generator
 

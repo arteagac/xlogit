@@ -5,7 +5,7 @@ xlogit: A Python Package for GPU-Accelerated Estimation of Mixed Logit Models.
 .. image:: https://raw.githubusercontent.com/arteagac/xlogit/master/docs/xlogit_logo_1000px.png
   :width: 400
 
-|Travis| |Coverage| |Community| |Docs| |PyPi| |License|
+|Build| |Coverage| |Community| |Docs| |PyPi| |License|
 
 .. _Mixed Logit: https://xlogit.readthedocs.io/en/latest/api/mixed_logit.html
 .. _Multinomial Logit: https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html
@@ -165,8 +165,8 @@ Or using BibTex as follows::
     }
 
 
-.. |Travis| image:: https://travis-ci.com/arteagac/xlogit.svg?branch=master
-   :target: https://travis-ci.com/arteagac/xlogit
+.. |Build| image:: https://github.com/arteagac/xlogit/actions/workflows/python-tests.yml/badge.svg
+   :target: https://github.com/arteagac/xlogit/actions/workflows/python-tests.yml
 
 .. |Docs| image:: https://readthedocs.org/projects/xlogit/badge/?version=latest
    :target: https://xlogit.readthedocs.io/en/latest/?badge=latest

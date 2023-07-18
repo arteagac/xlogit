@@ -69,7 +69,7 @@ class MixedLogit(ChoiceModel):
     def fit(self, X, y, varnames, alts, ids, randvars, isvars=None, weights=None, avail=None,  panels=None,
             base_alt=None, fit_intercept=False, init_coeff=None, maxiter=2000, random_state=None, n_draws=1000,
             halton=True, verbose=1, batch_size=None, halton_opts=None, tol_opts=None, robust=False, num_hess=False,
-            scale_factor=None, optim_method="BFGS", mnl_init=True, addit=None):
+            scale_factor=None, optim_method="BFGS", mnl_init=True, addit=None, skip_std_errs=False):
         """Fit Mixed Logit models.
 
         Parameters
@@ -171,6 +171,9 @@ class MixedLogit(ChoiceModel):
         num_hess: bool, default=False
             Whether numerical hessian should be used for estimation of standard errors
 
+        skip_std_errs: bool, default=False
+            Whether estimation of standard errors should be skipped
+
         mnl_init: bool, default=True
             Whether to initialize coefficients using estimates from a multinomial logit
         Returns
@@ -219,9 +222,11 @@ class MixedLogit(ChoiceModel):
         if optim_method == "L-BFGS-B":
             optim_res['grad_n'] = self._loglik_gradient(optim_res['x'], *fargs, return_gradient=True)[2]
 
-        if num_hess or optim_method == "L-BFGS-B":
+        if (num_hess or optim_method == "L-BFGS-B") and not skip_std_errs:
             optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)
-        
+        else:
+            optim_res['hess_inv'] = np.eye(len(optim_res['x']))
+
         self._post_fit(optim_res, coef_names, X.shape[0], verbose, robust)
 
 

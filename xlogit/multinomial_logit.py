@@ -59,8 +59,9 @@ class MultinomialLogit(ChoiceModel):
 
     def fit(self, X, y, varnames, alts, ids, isvars=None,
             weights=None, avail=None, base_alt=None, fit_intercept=False,
-            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None, verbose=1,
-            robust=False, num_hess=False, scale_factor=None, addit=None):
+            init_coeff=None, maxiter=2000, random_state=None, tol_opts=None,
+            verbose=1, robust=False, num_hess=False, scale_factor=None,
+            addit=None, skip_std_errs=False):
         """Fit multinomial and/or conditional logit models.
 
         Parameters
@@ -113,6 +114,9 @@ class MultinomialLogit(ChoiceModel):
         num_hess: bool, default=False
             Whether numerical hessian should be used for estimation of standard errors
 
+        skip_std_errs: bool, default=False
+            Whether estimation of standard errors should be skipped
+
         random_state : int, default=None
             Random seed for numpy random generator
 
@@ -157,8 +161,10 @@ class MultinomialLogit(ChoiceModel):
         if scale_factor is not None:
             coef_names = np.append(coef_names, "_scale_factor")
 
-        if num_hess or True:
+        if num_hess and not skip_std_errs:
             optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)
+        else:
+            optim_res['hess_inv'] = np.eye(len(optim_res['x']))
         self._post_fit(optim_res, coef_names, X.shape[0], verbose, robust)
 
 

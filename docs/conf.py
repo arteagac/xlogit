@@ -22,7 +22,7 @@ copyright = '2023, Cristian Arteaga'
 author = 'Cristian Arteaga'
 
 # The full version, including alpha/beta/rc tags
-release = '0.2.6'
+release = '0.2.7'
 
 
 # -- General configuration ---------------------------------------------------

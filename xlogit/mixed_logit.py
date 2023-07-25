@@ -190,7 +190,7 @@ class MixedLogit(ChoiceModel):
             # Initialize coefficients using a multinomial logit model
             mnl = MultinomialLogit()
             mnl.fit(X, y, varnames, alts, ids, isvars=isvars, weights=weights, addit=addit,
-                    avail=avail, base_alt=base_alt, fit_intercept=fit_intercept)
+                    avail=avail, base_alt=base_alt, fit_intercept=fit_intercept, skip_std_errs=True)
             init_coeff = np.concatenate((mnl.coeff_, np.repeat(.1, len(randvars))))
             init_coeff = init_coeff if scale_factor is None else np.append(init_coeff, 1.)
 

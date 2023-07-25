@@ -219,13 +219,15 @@ class MixedLogit(ChoiceModel):
             coef_names = np.append(coef_names, "_scale_factor")
 
         num_hess = num_hess if scale_factor is None else True
+
         if optim_method == "L-BFGS-B":
             optim_res['grad_n'] = self._loglik_gradient(optim_res['x'], *fargs, return_gradient=True)[2]
 
-        if (num_hess or optim_method == "L-BFGS-B") and not skip_std_errs:
-            optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)
-        else:
+        if skip_std_errs:
             optim_res['hess_inv'] = np.eye(len(optim_res['x']))
+        else:
+            if num_hess or optim_method == "L-BFGS-B":
+                optim_res['hess_inv'] = _numerical_hessian(optim_res['x'], self._loglik_gradient, args=fargs)            
 
         self._post_fit(optim_res, coef_names, X.shape[0], verbose, robust)
 

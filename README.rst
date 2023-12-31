@@ -129,6 +129,7 @@ The current version allows estimation of:
 - `Mixed Logit`_ with Halton draws
 - `Multinomial Logit`_ models
 - `Conditional logit <https://xlogit.readthedocs.io/en/latest/api/multinomial_logit.html>`_ models
+- `WTP space <https://xlogit.readthedocs.io/en/latest/notebooks/wtp_space.html>`_ models
 - Handling of unbalanced availability of choice alternatives for all of the supported models 
 - Post-estimation tools for prediction and specification testing
 - Inclusion of sample weights for all of the supported models

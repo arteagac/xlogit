@@ -521,6 +521,7 @@ class MixedLogit(ChoiceModel):
             proba.append(dev.to_cpu(proba_))
 
         lik = np.stack(proba).sum(axis=0)/R  # (N, )
+        lik = lik + 1e-200
         loglik = np.log(lik) if weights is None else np.log(lik)*weights
         loglik = loglik.sum()
         output = (-loglik, )
